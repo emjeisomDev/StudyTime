@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>StudyTime.Infrastructure</AssemblyName>
+    <RootNamespace>StudyTime.Infrastructure</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StudyTime.Application\StudyTime.Application.csproj" />
+    <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
+  </ItemGroup>
+</Project>
