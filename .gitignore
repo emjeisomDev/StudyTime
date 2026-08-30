@@ -1,0 +1,129 @@
+# ==============================================
+# General / OS
+# ==============================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+
+# ==============================================
+# .NET / ASP.NET Core (dotnet 10.0.200)
+# ==============================================
+## Build results
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.exe
+*.dll
+*.pdb
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## NuGet packages (if not using package references)
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Rider / Visual Studio / VS Code
+.idea/
+.vs/
+.vscode/
+*.sln.iml
+*.resharper
+*.DotSettings.user
+*.csproj.user
+*.props.user
+*.targets.user
+
+## Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+## Publish / deployment folders
+publish/
+*.Publish.xml
+*.pubxml
+*.pubxml.user
+
+## Miscellaneous .NET
+*.cachefile
+*.log
+*.tmp
+*.temp
+*.pidb
+*.pdb
+*.db
+*.sqlite
+*.sqlite3
+*.mdf
+*.ldf
+
+# ==============================================
+# Angular / Node.js (Frontend)
+# ==============================================
+## Dependencies
+node_modules/
+.npm/
+.yarn/
+.pnpm/
+
+## Build outputs
+dist/
+out/
+build/
+*.tsbuildinfo
+
+## Angular specific
+.angular/
+.angular/cache/
+.nx/
+
+## Environment files (optional, adjust if needed)
+# environment.ts (if using local overrides)
+# environment.prod.ts
+
+## Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+## Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+## Coverage / test
+coverage/
+.nyc_output/
+.karma/
+*.lcov
+
+## Misc
+.cache/
+.temp/
+.tmp/
+*.swp
+*.swo
+*.map
+
+# ==============================================
+# Custom folder to ignore
+# ==============================================
+Roadmap/
