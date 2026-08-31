@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>StudyTime.Application</AssemblyName>
     <RootNamespace>StudyTime.Application</RootNamespace>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
