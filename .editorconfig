@@ -29,8 +29,8 @@ csharp_namespace_declarations = file_scoped:warning
 csharp_style_namespace_declarations = file_scoped:warning
 csharp_new_line_before_members_in_chained_object_initializers = true
 csharp_new_line_before_members_in_chained_object_initializers = true
-dotnet_diagnostic.IDE0005.severity = warning
-dotnet_diagnostic.IDE0055.severity = warning
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0055.severity = none
 dotnet_diagnostic.CA1822.severity = warning
 
 [*.csproj]

@@ -3,9 +3,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>StudyTime.Infrastructure</AssemblyName>
     <RootNamespace>StudyTime.Infrastructure</RootNamespace>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Application\StudyTime.Application.csproj" />
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 </Project>

@@ -8,10 +8,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11"></PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Application\StudyTime.Application.csproj" />
+    <ProjectReference Include="..\StudyTime.Infrastructure\StudyTime.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
