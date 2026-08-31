@@ -9,9 +9,9 @@ public sealed class ArchitectureTests
     {
         Assembly domainAssembly = typeof(StudyTime.Domain.AssemblyMarker).Assembly;
         string[] references = domainAssembly
-                                .GetReferencedAssemblies()
-                                .Select(reference => reference.Name ?? string.Empty)
-                                .ToArray();
+            .GetReferencedAssemblies()
+            .Select(reference => reference.Name ?? string.Empty)
+            .ToArray();
 
         Assert.DoesNotContain("StudyTime.Application", references);
         Assert.DoesNotContain("StudyTime.Infrastructure", references);

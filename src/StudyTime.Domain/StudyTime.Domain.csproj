@@ -3,5 +3,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>StudyTime.Domain</AssemblyName>
     <RootNamespace>StudyTime.Domain</RootNamespace>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 </Project>
