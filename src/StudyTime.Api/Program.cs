@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using StudyTime.Application.Common.Clock;
+using StudyTime.Application.Common.Transactions;
 using StudyTime.Infrastructure.Common.Clock;
+using StudyTime.Infrastructure.Common.Transactions;
 using StudyTime.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +24,8 @@ builder.Services.AddSingleton<IApplicationClock>(serviceProvider =>
 builder.Services.AddDbContext<StudyTimeDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql =>
         npgsql.MigrationsAssembly(typeof(StudyTimeDbContext).Assembly.FullName)));
+
+builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
 var app = builder.Build();
 
