@@ -4,10 +4,13 @@ using StudyTime.Application.Common.Transactions;
 using StudyTime.Infrastructure.Common.Clock;
 using StudyTime.Infrastructure.Common.Transactions;
 using StudyTime.Infrastructure.Persistence;
+using StudyTime.Api.Errors;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 var connectionString = builder.Configuration
     .GetConnectionString("StudyTime")
@@ -28,6 +31,8 @@ builder.Services.AddDbContext<StudyTimeDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
