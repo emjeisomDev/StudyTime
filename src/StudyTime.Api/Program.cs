@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using StudyTime.Api.Errors;
+using StudyTime.Application.Common.Calendar;
 using StudyTime.Application.Common.Clock;
 using StudyTime.Application.Common.Transactions;
 using StudyTime.Application.StudyAreas;
@@ -30,6 +31,7 @@ builder.Services.AddSingleton<IApplicationClock>(serviceProvider =>
     new ApplicationClock(
         serviceProvider.GetRequiredService<TimeProvider>(),
         applicationTimeZone));
+builder.Services.AddSingleton<IApplicationCalendar, ApplicationCalendar>();
 
 builder.Services.AddDbContext<StudyTimeDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql =>

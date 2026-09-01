@@ -1,8 +1,5 @@
 namespace StudyTime.Application.Common.Calendar;
 
-/// <summary>
-/// Represents an ISO calendar week and its inclusive date range.
-/// </summary>
 public readonly record struct ApplicationWeek
 {
     public DateOnly WeekStartDate { get; }
@@ -20,4 +17,7 @@ public readonly record struct ApplicationWeek
         IsoYear = System.Globalization.ISOWeek.GetYear(weekStartDate);
         IsoWeek = System.Globalization.ISOWeek.GetWeekOfYear(weekStartDate);
     }
+
+    public ApplicationWeek AddWeeks(int weeks)
+        => new(WeekStartDate.AddDays(weeks * 7));
 }

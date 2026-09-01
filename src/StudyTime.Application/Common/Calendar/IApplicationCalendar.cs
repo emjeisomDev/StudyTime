@@ -8,5 +8,7 @@ public interface IApplicationCalendar
     ApplicationWeek CurrentWeek { get; }
     ApplicationWeek PreviousWeek { get; }
     ApplicationWeek NextWeek { get; }
+    IReadOnlyList<ApplicationWeek> ConfigurationWeeks { get; }
     ApplicationWeek GetWeek(DateOnly dateWeek);
+    bool IsWithinConfigurationWindow(DateOnly weekStartDate);
 }
