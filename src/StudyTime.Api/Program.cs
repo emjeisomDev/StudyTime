@@ -5,6 +5,7 @@ using StudyTime.Application.Common.Calendar;
 using StudyTime.Application.Common.Clock;
 using StudyTime.Application.Common.Transactions;
 using StudyTime.Application.StudyAreas;
+using StudyTime.Application.StudyAreaWeeks;
 using StudyTime.Application.StudyPlans;
 using StudyTime.Infrastructure.Common.Clock;
 using StudyTime.Infrastructure.Common.Transactions;
@@ -42,6 +43,8 @@ builder.Services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
 builder.Services.AddScoped<IStudyAreaService, StudyAreaService>();
 builder.Services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
 builder.Services.AddScoped<IStudyPlanService, StudyPlanService>();
+builder.Services.AddScoped<IStudyAreaWeekRepository, StudyAreaWeekRepository>();
+builder.Services.AddScoped<IStudyAreaWeekService, StudyAreaWeekService>();
 
 var app = builder.Build();
 
