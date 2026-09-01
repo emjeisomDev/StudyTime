@@ -40,11 +40,12 @@ public sealed class StudyAreaService(IStudyAreaRepository repository) : IStudyAr
         var studyArea = await repository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Study area '{id}' was not found.");
 
-        studyArea.Rename(request.Name ?? string.Empty);
+        var newName = (request.Name ?? string.Empty).Trim();
 
-        if (await repository.ExistsByNameAsync(studyArea.Name, id, cancellationToken))
-            throw new InvalidOperationException($"A study area with name '{studyArea.Name}' already exists.");
+        if (await repository.ExistsByNameAsync(newName, id, cancellationToken))
+            throw new InvalidOperationException($"A study area with name '{newName}' already exists.");
 
+        studyArea.Rename(newName);
         studyArea.ChangeStandardWeeklyStudyTime(request.StdWeekStudyTime);
         await repository.SaveChangesAsync(cancellationToken);
 
