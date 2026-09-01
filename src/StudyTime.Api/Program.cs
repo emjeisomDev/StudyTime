@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using StudyTime.Api.Errors;
 using StudyTime.Application.Common.Clock;
 using StudyTime.Application.Common.Transactions;
 using StudyTime.Application.StudyAreas;
+using StudyTime.Application.StudyPlans;
 using StudyTime.Infrastructure.Common.Clock;
 using StudyTime.Infrastructure.Common.Transactions;
 using StudyTime.Infrastructure.Persistence;
@@ -10,7 +12,10 @@ using StudyTime.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
@@ -33,6 +38,8 @@ builder.Services.AddDbContext<StudyTimeDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 builder.Services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
 builder.Services.AddScoped<IStudyAreaService, StudyAreaService>();
+builder.Services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
+builder.Services.AddScoped<IStudyPlanService, StudyPlanService>();
 
 var app = builder.Build();
 

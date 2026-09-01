@@ -4,7 +4,7 @@ using StudyTime.Application.StudyAreas;
 namespace StudyTime.Api.Controllers;
 
 [ApiController]
-[Route("study-areas")]
+[Route("api/study-areas")]
 public sealed class StudyAreasController(IStudyAreaService service) : ControllerBase
 {
     [HttpPost]
