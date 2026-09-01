@@ -1,19 +1,21 @@
 using Microsoft.EntityFrameworkCore;
+using StudyTime.Api.Errors;
 using StudyTime.Application.Common.Clock;
 using StudyTime.Application.Common.Transactions;
+using StudyTime.Application.StudyAreas;
 using StudyTime.Infrastructure.Common.Clock;
 using StudyTime.Infrastructure.Common.Transactions;
 using StudyTime.Infrastructure.Persistence;
-using StudyTime.Api.Errors;
+using StudyTime.Infrastructure.Persistence.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
-var connectionString = builder.Configuration
-    .GetConnectionString("StudyTime")
+var connectionString = builder.Configuration.GetConnectionString("StudyTime")
     ?? throw new InvalidOperationException("Connection string 'StudyTime' was not configured.");
 
 var applicationTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
@@ -29,19 +31,22 @@ builder.Services.AddDbContext<StudyTimeDbContext>(options =>
         npgsql.MigrationsAssembly(typeof(StudyTimeDbContext).Assembly.FullName)));
 
 builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+builder.Services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
+builder.Services.AddScoped<IStudyAreaService, StudyAreaService>();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
+
+app.MapControllers();
 
 app.MapGet("/", () => Results.Ok(new { service = "StudyTime.Api", status = "ok" }));
 
 app.Run();
+
 
 /// <summary>
 /// Exposes the API program type for integration and foundation tests.
