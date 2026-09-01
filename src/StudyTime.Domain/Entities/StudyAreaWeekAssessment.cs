@@ -9,9 +9,7 @@ public sealed class StudyAreaWeekAssessment
 
     public bool GoalAchieved => MinutesStudied >= WeekIndividualGoal;
 
-    private StudyAreaWeekAssessment()
-    {
-    }
+    private StudyAreaWeekAssessment() { }
 
     private StudyAreaWeekAssessment(Guid id, decimal weekIndividualGoal, Guid studyAreaWeekId)
     {
@@ -41,12 +39,14 @@ public sealed class StudyAreaWeekAssessment
         return assessment;
     }
 
-    public void RecalculateGoal(StudyArea studyArea, StudyPlan studyPlan)
+    public void RecalculateGoal(decimal weekIndividualGoal)
     {
-        ArgumentNullException.ThrowIfNull(studyArea);
-        ArgumentNullException.ThrowIfNull(studyPlan);
+        if (weekIndividualGoal <= 0)
+            throw new ArgumentOutOfRangeException(
+                nameof(weekIndividualGoal), "The individual weekly goal must be greater than zero."
+            );
 
-        WeekIndividualGoal = CalculateGoal(studyArea, studyPlan);
+        WeekIndividualGoal = weekIndividualGoal;
     }
 
     public void UpdateMinutesStudied(int minutesStudied)
@@ -55,13 +55,5 @@ public sealed class StudyAreaWeekAssessment
             throw new ArgumentOutOfRangeException(nameof(minutesStudied), "Studied minutes cannot be negative.");
 
         MinutesStudied = minutesStudied;
-    }
-
-    public static decimal CalculateGoal(StudyArea studyArea, StudyPlan studyPlan)
-    {
-        ArgumentNullException.ThrowIfNull(studyArea);
-        ArgumentNullException.ThrowIfNull(studyPlan);
-
-        return studyArea.StdWeekStudyTime * studyPlan.Coefficient;
     }
 }

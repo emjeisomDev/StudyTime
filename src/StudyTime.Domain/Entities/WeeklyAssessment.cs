@@ -8,9 +8,7 @@ public sealed class WeeklyAssessment
     public decimal WeekGlobalGoal { get; private set; }
     public int MinutesStudied { get; private set; }
 
-    private WeeklyAssessment()
-    {
-    }
+    private WeeklyAssessment() { }
 
     private WeeklyAssessment(Guid id, int year, int weekNumber, decimal weekGlobalGoal, int minutesStudied)
     {
@@ -57,26 +55,6 @@ public sealed class WeeklyAssessment
 
         var materialized = assessments.ToArray();
         return WeekGlobalGoal > 0 && materialized.Length > 0 && materialized.All(assessment => assessment.GoalAchieved);
-    }
-
-    public static decimal CalculateGlobalGoal(IEnumerable<StudyAreaWeekAssessment> assessments)
-    {
-        ArgumentNullException.ThrowIfNull(assessments);
-
-        var materialized = assessments.ToArray();
-        if (materialized.Length == 0)
-            throw new ArgumentException("At least one individual assessment is required.", nameof(assessments));
-
-        var total = materialized.Sum(assessment => assessment.WeekIndividualGoal);
-        if (total <= 0)
-            throw new InvalidOperationException("The global weekly goal must be greater than zero.");
-
-        return total;
-    }
-
-    public void RecalculateGlobalGoal(IEnumerable<StudyAreaWeekAssessment> assessments)
-    {
-        UpdateGlobalGoal(CalculateGlobalGoal(assessments));
     }
 
     private static void ValidateIsoWeek(int year, int weekNumber)

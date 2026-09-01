@@ -61,17 +61,17 @@ public sealed class FoundationTests
         var assessment = WeeklyAssessment.Create(2026, 35, 1000m);
 
         Assert.Throws<ArgumentException>(() =>
-            StudyAreaWeek.Create(new DateOnly(2026, 9, 1), area, plan, assessment.Id));
+            StudyAreaWeek.Create(new DateOnly(2026, 9, 1), area, plan, assessment.Id, 1000m));
     }
 
     [Fact]
-    public void StudyAreaWeekShouldCalculateIndividualGoal()
+    public void StudyAreaWeekShouldStorePreCalculatedIndividualGoal()
     {
         var area = StudyArea.Create("C#", 1000);
         var plan = StudyPlan.Create("Intensivo", 1.5m);
         var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1500m);
 
-        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id);
+        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id, 1500m);
 
         Assert.Equal(1500m, week.Assessment.WeekIndividualGoal);
         Assert.Equal(0, week.Assessment.MinutesStudied);
@@ -86,7 +86,7 @@ public sealed class FoundationTests
         var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1000m);
 
         Assert.Throws<InvalidOperationException>(() =>
-            StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id));
+            StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id, 1000m));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class FoundationTests
         var area = StudyArea.Create("C#", 1000);
         var plan = StudyPlan.Create("Normal", 1m);
         var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1000m);
-        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id);
+        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area, plan, weeklyAssessment.Id, 1000m);
 
         week.Assessment.UpdateMinutesStudied(999);
         Assert.False(week.Assessment.GoalAchieved);
@@ -105,17 +105,19 @@ public sealed class FoundationTests
     }
 
     [Fact]
-    public void WeeklyAssessmentShouldCalculateGlobalGoalFromIndividualGoals()
+    public void WeeklyAssessmentShouldAcceptPreCalculatedGlobalGoal()
     {
-        var area1 = StudyArea.Create("C#", 600);
-        var area2 = StudyArea.Create("SQL", 800);
-        var plan = StudyPlan.Create("Normal", 1m);
-        var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1m);
+        var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1400m);
 
-        var week1 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area1, plan, weeklyAssessment.Id);
-        var week2 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area2, plan, weeklyAssessment.Id);
+        Assert.Equal(1400m, weeklyAssessment.WeekGlobalGoal);
+    }
 
-        weeklyAssessment.RecalculateGlobalGoal([week1.Assessment, week2.Assessment]);
+    [Fact]
+    public void WeeklyAssessmentShouldUpdateGlobalGoalWithCalculatedValue()
+    {
+        var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1000m);
+
+        weeklyAssessment.UpdateGlobalGoal(1400m);
 
         Assert.Equal(1400m, weeklyAssessment.WeekGlobalGoal);
     }
@@ -128,8 +130,8 @@ public sealed class FoundationTests
         var plan = StudyPlan.Create("Normal", 1m);
         var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1500m);
 
-        var week1 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area1, plan, weeklyAssessment.Id);
-        var week2 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area2, plan, weeklyAssessment.Id);
+        var week1 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area1, plan, weeklyAssessment.Id, 1000m);
+        var week2 = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), area2, plan, weeklyAssessment.Id, 500m);
 
         week1.Assessment.UpdateMinutesStudied(1000);
         week2.Assessment.UpdateMinutesStudied(499);
@@ -192,10 +194,8 @@ public sealed class FoundationTests
         var weekStart = new DateOnly(2026, 8, 31);
         var weekId = Guid.NewGuid();
 
-        var first = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1),
-                    new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero), 30, weekId, weekStart);
-        var second = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1),
-                    new DateTimeOffset(2026, 9, 1, 18, 0, 0, TimeSpan.Zero), 45, weekId, weekStart);
+        var first = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1), new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero), 30, weekId, weekStart);
+        var second = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1), new DateTimeOffset(2026, 9, 1, 18, 0, 0, TimeSpan.Zero), 45, weekId, weekStart);
 
         Assert.Equal(first.Date, second.Date);
         Assert.NotEqual(first.Id, second.Id);
@@ -207,10 +207,8 @@ public sealed class FoundationTests
         var weekStart = new DateOnly(2026, 8, 31);
         var weekId = Guid.NewGuid();
 
-        var oldest = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1),
-                        new DateTimeOffset(2026, 9, 1, 8, 0, 0, TimeSpan.Zero), 30, weekId, weekStart);
-        var newest = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1),
-                        new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero), 45, weekId, weekStart);
+        var oldest = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1), new DateTimeOffset(2026, 9, 1, 8, 0, 0, TimeSpan.Zero), 30, weekId, weekStart);
+        var newest = StudyRecord.Create(Guid.NewGuid(), new DateOnly(2026, 9, 1), new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero), 45, weekId, weekStart);
 
         var selected = StudyRecord.SelectLastForDeletion([oldest, newest]);
 
@@ -241,18 +239,18 @@ public sealed class FoundationTests
     }
 
     [Fact]
-    public void StudyAreaWeekShouldRecalculateIndividualGoalWhenReconfigured()
+    public void StudyAreaWeekShouldReconfigureWithPreCalculatedIndividualGoal()
     {
         var originalArea = StudyArea.Create("C#", 1000);
         var newArea = StudyArea.Create("SQL", 1200);
         var plan = StudyPlan.Create("Normal", 1m);
         var weeklyAssessment = WeeklyAssessment.Create(2026, 36, 1000m);
 
-        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), originalArea, plan, weeklyAssessment.Id);
+        var week = StudyAreaWeek.Create(new DateOnly(2026, 8, 31), originalArea, plan, weeklyAssessment.Id, 1000m);
 
         Assert.Equal(1000m, week.Assessment.WeekIndividualGoal);
 
-        week.Reconfigure(newArea, plan);
+        week.Reconfigure(newArea, plan, 1200m);
 
         Assert.Equal(newArea.Id, week.StudyAreaId);
         Assert.Equal(1200m, week.Assessment.WeekIndividualGoal);
