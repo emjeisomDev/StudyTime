@@ -178,6 +178,10 @@ public sealed class ApplicationCalendarTests
 
     private sealed class FixedApplicationClock : IApplicationClock
     {
+        public DateTimeOffset Now { get; }
+        public DateOnly Today { get; }
+        public TimeZoneInfo TimeZone { get; }
+        
         public FixedApplicationClock(DateOnly today)
         {
             Today = today;
@@ -185,8 +189,6 @@ public sealed class ApplicationCalendarTests
             Now = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeZone.BaseUtcOffset);
         }
 
-        public DateTimeOffset Now { get; }
-        public DateOnly Today { get; }
-        public TimeZoneInfo TimeZone { get; }
+
     }
 }

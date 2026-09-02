@@ -32,21 +32,16 @@ public sealed class StudyAreaWeekService(
             throw new InvalidOperationException("Manual creation of the current week is not allowed by the temporal configuration rule.");
 
         var currentWeekStartDate = currentWeek.WeekStartDate;
-        var currentAssessment = await repository.GetWeeklyAssessmentAsync(
-            ISOWeek.GetYear(currentWeekStartDate.ToDateTime(TimeOnly.MinValue)),
-            ISOWeek.GetWeekOfYear(currentWeekStartDate.ToDateTime(TimeOnly.MinValue)),
-            cancellationToken);
+        var currentAssessment = await GetWeeklyAssessmentAsync(currentWeekStartDate, cancellationToken);
 
         if (currentAssessment is null || !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
             throw new InvalidOperationException("The current week's global goal must be achieved before changing the weekly configuration.");
 
         var studyArea = await studyAreaRepository.GetByIdAsync(request.StudyAreaId, cancellationToken);
-
         if (studyArea is null)
             throw new KeyNotFoundException($"StudyArea '{request.StudyAreaId}' was not found.");
 
         var studyPlan = await studyPlanRepository.GetByIdAsync(request.StudyPlanId, cancellationToken);
-        
         if (studyPlan is null)
             throw new KeyNotFoundException($"StudyPlan '{request.StudyPlanId}' was not found.");
 
@@ -67,14 +62,11 @@ public sealed class StudyAreaWeekService(
 
         try
         {
-            var isoDate = request.WeekStartDate.ToDateTime(TimeOnly.MinValue);
-            var isoYear = ISOWeek.GetYear(isoDate);
-            var isoWeek = ISOWeek.GetWeekOfYear(isoDate);
-
-            var weeklyAssessment = await repository.GetWeeklyAssessmentAsync(isoYear, isoWeek, cancellationToken);
+            var weeklyAssessment = await GetWeeklyAssessmentAsync(request.WeekStartDate, cancellationToken);
 
             if (weeklyAssessment is null)
             {
+                var (isoYear, isoWeek) = GetIsoWeek(request.WeekStartDate);
                 weeklyAssessment = WeeklyAssessment.Create(isoYear, isoWeek, globalGoal);
                 repository.AddWeeklyAssessment(weeklyAssessment);
             }
@@ -94,21 +86,146 @@ public sealed class StudyAreaWeekService(
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new StudyAreaWeekResponse(
-                studyAreaWeek.Id,
-                studyAreaWeek.StudyAreaId,
-                studyAreaWeek.StudyPlanId,
-                studyAreaWeek.WeekStartDate,
-                studyAreaWeek.WeeklyAssessmentId,
-                studyAreaWeek.Assessment.WeekIndividualGoal,
-                weeklyAssessment.WeekGlobalGoal,
-                studyAreaWeek.Assessment.MinutesStudied);
+            return ToResponse(studyAreaWeek, weeklyAssessment);
         }
         catch
         {
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    public async Task<StudyAreaWeekBatchResponse> CreateBatchAsync(
+        CreateStudyAreaWeekBatchRequest request,
+        CancellationToken cancellationToken)
+    {
+        ValidateBatchRequest(request);
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            ValidateWeek(request.WeekStartDate);
+
+            if (!calendar.IsWithinConfigurationWindow(request.WeekStartDate))
+                throw new InvalidOperationException("The requested week is outside the allowed configuration window.");
+
+            var targetWeek = calendar.GetWeek(request.WeekStartDate);
+            var currentWeek = calendar.CurrentWeek;
+
+            if (targetWeek.Equals(currentWeek))
+                throw new InvalidOperationException("Manual creation of the current week is not allowed by the temporal configuration rule.");
+
+            var currentWeekStartDate = currentWeek.WeekStartDate;
+            var currentAssessment = await GetWeeklyAssessmentAsync(currentWeekStartDate, cancellationToken);
+
+            if (currentAssessment is null || !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
+                throw new InvalidOperationException("The current week's global goal must be achieved before changing the weekly configuration.");
+
+            var duplicateAreaIds = request.Items
+                .GroupBy(x => x.StudyAreaId)
+                .Where(x => x.Count() > 1)
+                .Select(x => x.Key)
+                .ToArray();
+
+            if (duplicateAreaIds.Length > 0)
+                throw new InvalidOperationException("The same StudyArea cannot appear more than once in the batch for the requested week.");
+
+            var existingConfigurations = await repository.ListByWeekAsync(request.WeekStartDate, cancellationToken);
+            var existingAreaIds = existingConfigurations
+                .Select(x => x.StudyAreaId)
+                .ToHashSet();
+
+            var conflictingAreaIds = request.Items
+                .Select(x => x.StudyAreaId)
+                .Where(existingAreaIds.Contains)
+                .Distinct()
+                .ToArray();
+
+            if (conflictingAreaIds.Length > 0)
+                throw new InvalidOperationException("One or more StudyAreas already have a configuration for the requested week.");
+
+            var calculatedItems = new List<CalculatedBatchItem>(request.Items.Count);
+
+            foreach (var item in request.Items)
+            {
+                if (item.StudyAreaId == Guid.Empty)
+                    throw new ArgumentException("StudyAreaId must not be empty.", nameof(request));
+
+                if (item.StudyPlanId == Guid.Empty)
+                    throw new ArgumentException("StudyPlanId must not be empty.", nameof(request));
+
+                var studyArea = await studyAreaRepository.GetByIdAsync(item.StudyAreaId, cancellationToken);
+                if (studyArea is null)
+                    throw new KeyNotFoundException($"StudyArea '{item.StudyAreaId}' was not found.");
+
+                var studyPlan = await studyPlanRepository.GetByIdAsync(item.StudyPlanId, cancellationToken);
+                if (studyPlan is null)
+                    throw new KeyNotFoundException($"StudyPlan '{item.StudyPlanId}' was not found.");
+
+                if (studyPlan.Status != StudyPlanStatus.Active)
+                    throw new InvalidOperationException($"The selected StudyPlan '{item.StudyPlanId}' must be active.");
+
+                var individualGoal = CalculateIndividualGoal(studyArea.StdWeekStudyTime, studyPlan.Coefficient);
+                calculatedItems.Add(new CalculatedBatchItem(item, studyArea, studyPlan, individualGoal));
+            }
+
+            var globalGoal = existingConfigurations.Sum(x => x.Assessment.WeekIndividualGoal)
+                + calculatedItems.Sum(x => x.IndividualGoal);
+
+            if (globalGoal < MinimumWeeklyGoal)
+                throw new InvalidOperationException($"The resulting weekly goal must be at least {MinimumWeeklyGoal.ToString(CultureInfo.InvariantCulture)} minutes.");
+
+            var weeklyAssessment = await GetWeeklyAssessmentAsync(request.WeekStartDate, cancellationToken);
+
+            if (weeklyAssessment is null)
+            {
+                var (isoYear, isoWeek) = GetIsoWeek(request.WeekStartDate);
+                weeklyAssessment = WeeklyAssessment.Create(isoYear, isoWeek, globalGoal);
+                repository.AddWeeklyAssessment(weeklyAssessment);
+            }
+            else
+            {
+                weeklyAssessment.UpdateGlobalGoal(globalGoal);
+            }
+
+            var responses = new List<StudyAreaWeekResponse>(calculatedItems.Count);
+
+            foreach (var calculatedItem in calculatedItems)
+            {
+                var studyAreaWeek = StudyAreaWeek.Create(
+                    request.WeekStartDate,
+                    calculatedItem.StudyArea,
+                    calculatedItem.StudyPlan,
+                    weeklyAssessment.Id,
+                    calculatedItem.IndividualGoal);
+
+                repository.Add(studyAreaWeek);
+                responses.Add(ToResponse(studyAreaWeek, weeklyAssessment));
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return new StudyAreaWeekBatchResponse(
+                request.WeekStartDate,
+                weeklyAssessment.Id,
+                weeklyAssessment.WeekGlobalGoal,
+                responses);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    private async Task<WeeklyAssessment?> GetWeeklyAssessmentAsync(
+        DateOnly weekStartDate,
+        CancellationToken cancellationToken)
+    {
+        var (isoYear, isoWeek) = GetIsoWeek(weekStartDate);
+        return await repository.GetWeeklyAssessmentAsync(isoYear, isoWeek, cancellationToken);
     }
 
     private async Task<bool> IsCurrentWeekGoalAchievedAsync(
@@ -130,6 +247,27 @@ public sealed class StudyAreaWeekService(
         return standardWeeklyStudyTime * coefficient;
     }
 
+    private static (int Year, int Week) GetIsoWeek(DateOnly weekStartDate)
+    {
+        var date = weekStartDate.ToDateTime(TimeOnly.MinValue);
+        return (ISOWeek.GetYear(date), ISOWeek.GetWeekOfYear(date));
+    }
+
+    private static StudyAreaWeekResponse ToResponse(
+        StudyAreaWeek studyAreaWeek,
+        WeeklyAssessment weeklyAssessment)
+    {
+        return new StudyAreaWeekResponse(
+            studyAreaWeek.Id,
+            studyAreaWeek.StudyAreaId,
+            studyAreaWeek.StudyPlanId,
+            studyAreaWeek.WeekStartDate,
+            studyAreaWeek.WeeklyAssessmentId,
+            studyAreaWeek.Assessment.WeekIndividualGoal,
+            weeklyAssessment.WeekGlobalGoal,
+            studyAreaWeek.Assessment.MinutesStudied);
+    }
+
     private static void ValidateRequest(CreateStudyAreaWeekRequest request)
     {
         if (request.StudyAreaId == Guid.Empty)
@@ -138,10 +276,34 @@ public sealed class StudyAreaWeekService(
         if (request.StudyPlanId == Guid.Empty)
             throw new ArgumentException("StudyPlanId must not be empty.", nameof(request));
 
-        if (request.WeekStartDate == default)
-            throw new ArgumentException("WeekStartDate is required.", nameof(request));
-
-        if (request.WeekStartDate.DayOfWeek != DayOfWeek.Monday)
-            throw new ArgumentException("WeekStartDate must be a Monday.", nameof(request));
+        ValidateWeek(request.WeekStartDate);
     }
+
+    private static void ValidateBatchRequest(CreateStudyAreaWeekBatchRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.Items is null)
+            throw new ArgumentNullException(nameof(request), "The batch Items collection must not be null.");
+
+        if (request.Items.Count == 0)
+            throw new ArgumentException("The batch must contain at least one item.", nameof(request));
+
+        ValidateWeek(request.WeekStartDate);
+    }
+
+    private static void ValidateWeek(DateOnly weekStartDate)
+    {
+        if (weekStartDate == default)
+            throw new ArgumentException("WeekStartDate is required.", nameof(weekStartDate));
+
+        if (weekStartDate.DayOfWeek != DayOfWeek.Monday)
+            throw new ArgumentException("WeekStartDate must be a Monday.", nameof(weekStartDate));
+    }
+
+    private sealed record CalculatedBatchItem(
+        CreateStudyAreaWeekBatchItem Request,
+        StudyArea StudyArea,
+        StudyPlan StudyPlan,
+        decimal IndividualGoal);
 }
