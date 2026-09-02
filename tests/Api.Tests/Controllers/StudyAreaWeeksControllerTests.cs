@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudyTime.Api.Controllers;
 using StudyTime.Application.StudyAreaWeeks;
@@ -27,7 +28,7 @@ public sealed class StudyAreaWeeksControllerTests
         var result = await controller.Create(request, CancellationToken.None);
 
         var created = Assert.IsType<CreatedResult>(result.Result);
-        Assert.Equal(201, created.StatusCode);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
         Assert.Equal(response, created.Value);
     }
 
@@ -78,7 +79,7 @@ public sealed class StudyAreaWeeksControllerTests
         var result = await controller.CreateBatch(request, CancellationToken.None);
 
         var created = Assert.IsType<ObjectResult>(result.Result);
-        Assert.Equal(201, created.StatusCode);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
         Assert.Equal(response, created.Value);
     }
 
@@ -103,11 +104,48 @@ public sealed class StudyAreaWeeksControllerTests
         Assert.Same(request, service.LastBatchRequest);
     }
 
+    [Fact]
+    public async Task GetAssessmentShouldReturnOk()
+    {
+        var studyAreaWeekId = Guid.NewGuid();
+        var response = new StudyAreaWeekAssessmentResponse(
+            studyAreaWeekId,
+            1500m,
+            1500,
+            true);
+
+        var service = new FakeStudyAreaWeekService(null, null, response);
+        var controller = new StudyAreaWeeksController(service);
+
+        var result = await controller.GetAssessment(studyAreaWeekId, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(StatusCodes.Status200OK, ok.StatusCode);
+        Assert.Equal(response, ok.Value);
+        Assert.Equal(studyAreaWeekId, service.LastAssessmentId);
+    }
+
+    [Fact]
+    public async Task GetAssessmentShouldReturnNotFoundWhenAssessmentDoesNotExist()
+    {
+        var studyAreaWeekId = Guid.NewGuid();
+        var service = new FakeStudyAreaWeekService(null, null, null);
+        var controller = new StudyAreaWeeksController(service);
+
+        var result = await controller.GetAssessment(studyAreaWeekId, CancellationToken.None);
+
+        Assert.IsType<NotFoundResult>(result.Result);
+        Assert.Equal(StatusCodes.Status404NotFound, ((NotFoundResult)result.Result!).StatusCode);
+        Assert.Equal(studyAreaWeekId, service.LastAssessmentId);
+    }
+
     private sealed class FakeStudyAreaWeekService(
         StudyAreaWeekResponse? createResponse,
-        StudyAreaWeekBatchResponse? batchResponse) : IStudyAreaWeekService
+        StudyAreaWeekBatchResponse? batchResponse,
+        StudyAreaWeekAssessmentResponse? assessmentResponse = null) : IStudyAreaWeekService
     {
         public CreateStudyAreaWeekBatchRequest? LastBatchRequest { get; private set; }
+        public Guid? LastAssessmentId { get; private set; }
 
         public Task<StudyAreaWeekResponse> CreateAsync(
             CreateStudyAreaWeekRequest request,
@@ -122,6 +160,14 @@ public sealed class StudyAreaWeeksControllerTests
             LastBatchRequest = request;
             return Task.FromResult(
                 batchResponse ?? throw new InvalidOperationException("Batch response was not configured."));
+        }
+
+        public Task<StudyAreaWeekAssessmentResponse?> GetAssessmentAsync(
+            Guid studyAreaWeekId,
+            CancellationToken cancellationToken)
+        {
+            LastAssessmentId = studyAreaWeekId;
+            return Task.FromResult(assessmentResponse);
         }
     }
 }

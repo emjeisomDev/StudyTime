@@ -33,3 +33,9 @@ public sealed record StudyAreaWeekBatchResponse(
     decimal WeekGlobalGoal, 
     IReadOnlyList<StudyAreaWeekResponse> Items
 );
+
+public sealed record StudyAreaWeekAssessmentResponse(
+    Guid StudyAreaWeekId,
+    decimal WeekIndividualGoal,
+    int MinutesStudied,
+    bool GoalAchieved);

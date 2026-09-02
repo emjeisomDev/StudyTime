@@ -32,4 +32,19 @@ public sealed class StudyAreaWeeksController(IStudyAreaWeekService service) : Co
         var response = await service.CreateBatchAsync(request, cancellationToken);
         return StatusCode(StatusCodes.Status201Created, response);
     }
+
+    [HttpGet("{id:guid}/assessment")]
+    [ProducesResponseType(typeof(StudyAreaWeekAssessmentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StudyAreaWeekAssessmentResponse>> GetAssessment(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var response = await service.GetAssessmentAsync(id, cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
 }

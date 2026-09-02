@@ -6,6 +6,14 @@ namespace StudyTime.Infrastructure.Persistence.Repositories;
 
 public sealed class StudyAreaWeekRepository(StudyTimeDbContext dbContext) : IStudyAreaWeekRepository
 {
+
+    public Task<StudyAreaWeek?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return dbContext.StudyAreaWeeks
+            .Include(x => x.Assessment)
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<StudyAreaWeek>> ListByWeekAsync(DateOnly weekStartDate, CancellationToken cancellationToken)
     {
         return await dbContext.StudyAreaWeeks
