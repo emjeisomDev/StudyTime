@@ -33,6 +33,27 @@ public sealed class StudyAreaWeeksController(IStudyAreaWeekService service) : Co
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(StudyAreaWeekResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<StudyAreaWeekResponse>> Update(
+        Guid id,
+        [FromBody] UpdateStudyAreaWeekRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await service.UpdateAsync(
+            id,
+            request,
+            cancellationToken);
+
+        if (response is null)
+            return NotFound();
+
+        return Ok(response);
+    }
+
     [HttpGet("{id:guid}/assessment")]
     [ProducesResponseType(typeof(StudyAreaWeekAssessmentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -41,7 +62,6 @@ public sealed class StudyAreaWeeksController(IStudyAreaWeekService service) : Co
         CancellationToken cancellationToken)
     {
         var response = await service.GetAssessmentAsync(id, cancellationToken);
-
         if (response is null)
             return NotFound();
 

@@ -16,6 +16,11 @@ public sealed record CreateStudyAreaWeekBatchRequest(
     IReadOnlyList<CreateStudyAreaWeekBatchItem> Items
 );
 
+public sealed record UpdateStudyAreaWeekRequest(
+    Guid? StudyAreaId,
+    Guid? StudyPlanId
+);
+
 public sealed record StudyAreaWeekResponse(
     Guid Id, 
     Guid StudyAreaId, 
