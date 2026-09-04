@@ -38,6 +38,18 @@ public sealed class StudyAreaWeekRepository(StudyTimeDbContext dbContext) : IStu
                 cancellationToken);
     }
 
+    public async Task<IReadOnlyList<StudyRecord>> ListStudyRecordsByWeekAsync(DateOnly weekStartDate, CancellationToken cancellationToken)
+    {
+        return await (
+            from record in dbContext.StudyRecords
+            join studyAreaWeek in dbContext.StudyAreaWeeks
+                on record.StudyAreaWeekId equals studyAreaWeek.Id
+            where studyAreaWeek.WeekStartDate == weekStartDate
+            orderby record.CreatedAt, record.Id
+            select record)
+            .ToListAsync(cancellationToken);
+    }
+
     public void Add(StudyAreaWeek studyAreaWeek)
     {
         dbContext.StudyAreaWeeks.Add(studyAreaWeek);

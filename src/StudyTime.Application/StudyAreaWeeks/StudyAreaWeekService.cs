@@ -34,7 +34,8 @@ public sealed class StudyAreaWeekService(
         var currentWeekStartDate = currentWeek.WeekStartDate;
         var currentAssessment = await GetWeeklyAssessmentAsync(currentWeekStartDate, cancellationToken);
 
-        if (currentAssessment is null || !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
+        if (currentAssessment is null ||
+            !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
             throw new InvalidOperationException("The current week's global goal must be achieved before changing the weekly configuration.");
 
         var studyArea = await studyAreaRepository.GetByIdAsync(request.StudyAreaId, cancellationToken);
@@ -117,7 +118,8 @@ public sealed class StudyAreaWeekService(
             var currentWeekStartDate = currentWeek.WeekStartDate;
             var currentAssessment = await GetWeeklyAssessmentAsync(currentWeekStartDate, cancellationToken);
 
-            if (currentAssessment is null || !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
+            if (currentAssessment is null ||
+                !await IsCurrentWeekGoalAchievedAsync(currentAssessment, currentWeekStartDate, cancellationToken))
                 throw new InvalidOperationException("The current week's global goal must be achieved before changing the weekly configuration.");
 
             var duplicateAreaIds = request.Items
@@ -130,9 +132,7 @@ public sealed class StudyAreaWeekService(
                 throw new InvalidOperationException("The same StudyArea cannot appear more than once in the batch for the requested week.");
 
             var existingConfigurations = await repository.ListByWeekAsync(request.WeekStartDate, cancellationToken);
-            var existingAreaIds = existingConfigurations
-                .Select(x => x.StudyAreaId)
-                .ToHashSet();
+            var existingAreaIds = existingConfigurations.Select(x => x.StudyAreaId).ToHashSet();
 
             var conflictingAreaIds = request.Items
                 .Select(x => x.StudyAreaId)
@@ -266,12 +266,10 @@ public sealed class StudyAreaWeekService(
         var studyPlanId = request.StudyPlanId ?? studyAreaWeek.StudyPlanId;
 
         var studyArea = await studyAreaRepository.GetByIdAsync(studyAreaId, cancellationToken);
-
         if (studyArea is null)
             throw new KeyNotFoundException($"StudyArea '{studyAreaId}' was not found.");
 
         var studyPlan = await studyPlanRepository.GetByIdAsync(studyPlanId, cancellationToken);
-
         if (studyPlan is null)
             throw new KeyNotFoundException($"StudyPlan '{studyPlanId}' was not found.");
 
@@ -319,6 +317,16 @@ public sealed class StudyAreaWeekService(
 
             weeklyAssessment.UpdateGlobalGoal(globalGoal);
 
+            var updatedConfigurations = configurations
+                .Select(x => x.Id == studyAreaWeek.Id ? studyAreaWeek : x)
+                .ToList();
+
+            await RecalculateAssessmentsAsync(
+                updatedConfigurations,
+                weeklyAssessment,
+                studyAreaWeek.WeekStartDate,
+                cancellationToken);
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
@@ -335,10 +343,10 @@ public sealed class StudyAreaWeekService(
         DateOnly weekStartDate,
         CancellationToken cancellationToken)
     {
-        var (isoYear, isoWeek) = GetIsoWeek(weekStartDate);
+        var (year, weekNumber) = GetIsoWeek(weekStartDate);
         return await repository.GetWeeklyAssessmentAsync(
-            isoYear,
-            isoWeek,
+            year,
+            weekNumber,
             cancellationToken);
     }
 
@@ -354,6 +362,30 @@ public sealed class StudyAreaWeekService(
         if (configurations.Count == 0)
             return false;
 
+        var records = await repository.ListStudyRecordsByWeekAsync(
+            currentWeekStartDate,
+            cancellationToken);
+
+        var minutesByStudyAreaWeek = records
+            .GroupBy(x => x.StudyAreaWeekId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => x.Minutes));
+
+        foreach (var configuration in configurations)
+        {
+            var minutesStudied = minutesByStudyAreaWeek.TryGetValue(
+                configuration.Id,
+                out var minutes)
+                ? minutes
+                : 0;
+
+            configuration.Assessment.UpdateMinutesStudied(minutesStudied);
+        }
+
+        var weeklyMinutesStudied = records.Sum(x => x.Minutes);
+        assessment.UpdateMinutesStudied(weeklyMinutesStudied);
+
         return assessment.IsGoalAchieved(
             configurations.Select(x => x.Assessment));
     }
@@ -362,11 +394,8 @@ public sealed class StudyAreaWeekService(
         int standardWeeklyStudyTime,
         decimal coefficient)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
-            standardWeeklyStudyTime);
-
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(
-            coefficient);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(standardWeeklyStudyTime);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(coefficient);
 
         return standardWeeklyStudyTime * coefficient;
     }
@@ -374,6 +403,7 @@ public sealed class StudyAreaWeekService(
     private static (int Year, int Week) GetIsoWeek(DateOnly weekStartDate)
     {
         var date = weekStartDate.ToDateTime(TimeOnly.MinValue);
+
         return (
             ISOWeek.GetYear(date),
             ISOWeek.GetWeekOfYear(date));
@@ -471,4 +501,35 @@ public sealed class StudyAreaWeekService(
         StudyArea StudyArea,
         StudyPlan StudyPlan,
         decimal IndividualGoal);
+
+    private async Task RecalculateAssessmentsAsync(
+        IReadOnlyList<StudyAreaWeek> configurations,
+        WeeklyAssessment weeklyAssessment,
+        DateOnly weekStartDate,
+        CancellationToken cancellationToken)
+    {
+        var records = await repository.ListStudyRecordsByWeekAsync(
+            weekStartDate,
+            cancellationToken);
+
+        var minutesByStudyAreaWeek = records
+            .GroupBy(x => x.StudyAreaWeekId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Sum(x => x.Minutes));
+
+        foreach (var configuration in configurations)
+        {
+            var minutesStudied = minutesByStudyAreaWeek.TryGetValue(
+                configuration.Id,
+                out var minutes)
+                ? minutes
+                : 0;
+
+            configuration.Assessment.UpdateMinutesStudied(minutesStudied);
+        }
+
+        var weeklyMinutesStudied = records.Sum(x => x.Minutes);
+        weeklyAssessment.UpdateMinutesStudied(weeklyMinutesStudied);
+    }
 }
