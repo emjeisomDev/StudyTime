@@ -1,8 +1,17 @@
+using StudyTime.Api.Middleware;
+using StudyTime.Application;
+using StudyTime.Infrastructure;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+
 WebApplication app = builder.Build();
+
+app.UseMiddleware<ProblemDetailsExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

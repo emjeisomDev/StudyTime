@@ -9,9 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
   </ItemGroup>
-
 </Project>
