@@ -5,35 +5,34 @@ namespace StudyTime.Infrastructure.Persistence.Transactions;
 
 public sealed class EfTransactionScope : ITransactionScope
 {
-    private readonly IDbContextTransaction _transaction;
+    private readonly StudyTimeDbContext _dbContext;
 
     private bool _completed;
     private bool _disposed;
 
-    public EfTransactionScope(IDbContextTransaction transaction)
+    public EfTransactionScope(StudyTimeDbContext dbContext)
     {
-        ArgumentNullException.ThrowIfNull(transaction);
-
-        _transaction = transaction;
+        ArgumentNullException.ThrowIfNull(dbContext);
+        _dbContext = dbContext;
     }
 
-    public async Task CommitAsync(CancellationToken ct = default)
+    public async Task CommitAsync(CancellationToken token = default)
     {
         EnsureNotDisposed();
         EnsureNotCompleted();
 
-        await _transaction.CommitAsync(ct);
-
+        IDbContextTransaction transaction = GetCurrentTransaction();
+        await transaction.CommitAsync(token);
         _completed = true;
     }
 
-    public async Task RollbackAsync(CancellationToken ct = default)
+    public async Task RollbackAsync(CancellationToken token = default)
     {
         EnsureNotDisposed();
         EnsureNotCompleted();
 
-        await _transaction.RollbackAsync(ct);
-
+        IDbContextTransaction transaction = GetCurrentTransaction();
+        await transaction.RollbackAsync(token);
         _completed = true;
     }
 
@@ -48,14 +47,25 @@ public sealed class EfTransactionScope : ITransactionScope
         {
             if (!_completed)
             {
-                await _transaction.RollbackAsync();
+                IDbContextTransaction? transaction = _dbContext.Database.CurrentTransaction;
+
+                if (transaction is not null)
+                {
+                    await transaction.RollbackAsync();
+                }
             }
         }
         finally
         {
-            await _transaction.DisposeAsync();
             _disposed = true;
         }
+    }
+
+    private IDbContextTransaction GetCurrentTransaction()
+    {
+        return _dbContext.Database.CurrentTransaction
+            ?? throw new InvalidOperationException(
+                "No active transaction has been started for the current context.");
     }
 
     private void EnsureNotDisposed()
@@ -67,7 +77,7 @@ public sealed class EfTransactionScope : ITransactionScope
     {
         if (_completed)
         {
-            throw new InvalidOperationException("A transação já foi finalizada e não pode ser reutilizada.");
+            throw new InvalidOperationException("The transaction has already been completed and cannot be reused.");
         }
     }
 }
