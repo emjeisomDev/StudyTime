@@ -1,0 +1,64 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose.override.yml
+
+# Generated artifacts
+artifacts/
+publish/
+
+# Database local files
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets
+appsettings.Development.json
+appsettings.Local.json
+
+# ==============================================
+# Custom folder to ignore
+# ==============================================
+Roadmap/
