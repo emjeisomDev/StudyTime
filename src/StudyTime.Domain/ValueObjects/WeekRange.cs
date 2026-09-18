@@ -19,7 +19,7 @@ public sealed record WeekRange
     {
         if (startDate.DayOfWeek != DayOfWeek.Monday)
         {
-            throw new DomainException("The week start date must be a Monday.");
+            throw new DomainValidationException("The week start date must be a Monday.");
         }
 
         TimeZoneInfo timeZone = GetSaoPauloTimeZone();

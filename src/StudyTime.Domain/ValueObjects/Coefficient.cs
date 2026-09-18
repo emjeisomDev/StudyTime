@@ -12,7 +12,7 @@ public readonly record struct Coefficient
     {
         if (value <= 0)
         {
-            throw new DomainException("Coefficient must be greater than zero.");
+            throw new DomainValidationException("Coefficient must be greater than zero.");
         }
 
         Value = value;

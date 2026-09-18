@@ -14,12 +14,12 @@ public readonly record struct IsoWeek
     {
         if (year <= 0)
         {
-            throw new DomainException("ISO week year must be greater than zero.");
+            throw new DomainValidationException("ISO week year must be greater than zero.");
         }
 
         if (weekNumber is < 1 or > 53)
         {
-            throw new DomainException("ISO week number must be between 1 and 53.");
+            throw new DomainValidationException("ISO week number must be between 1 and 53.");
         }
 
         Year = year;

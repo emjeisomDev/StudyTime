@@ -11,7 +11,7 @@ public readonly record struct Minutes
     {
         if (value <= 0)
         {
-            throw new DomainException("Minutes must be greater than zero.");
+            throw new DomainValidationException("Minutes must be greater than zero.");
         }
 
         Value = value;
