@@ -62,3 +62,4 @@ appsettings.Local.json
 # Custom folder to ignore
 # ==============================================
 Roadmap/
+tmp/
