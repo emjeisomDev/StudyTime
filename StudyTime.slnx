@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/StudyTime.Domain/StudyTime.Domain.csproj" />
+    <Project Path="src\StudyTime.Application\StudyTime.Application.csproj" />
   </Folder>
   <Folder Name="/tmp/">
     <Project Path="tmp/F1QuickValidation/F1QuickValidation.csproj" />

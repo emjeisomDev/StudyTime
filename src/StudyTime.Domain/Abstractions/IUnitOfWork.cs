@@ -2,6 +2,6 @@ namespace StudyTime.Domain.Abstractions;
 
 public interface IUnitOfWork
 {
-    public Task CommitAsync(CancellationToken ct);
-    public Task RollbackAsync(CancellationToken ct); 
+    public Task CommitAsync(CancellationToken token);
+    public Task RollbackAsync(CancellationToken token); 
 }
