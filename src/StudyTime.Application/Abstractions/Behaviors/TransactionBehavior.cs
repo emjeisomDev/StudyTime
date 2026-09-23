@@ -16,7 +16,13 @@ public sealed class TransactionBehavior<TRequest, TResponse>
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken token)
     {
-        if (request is not ICommand)
+        bool isCommand = typeof(TRequest)
+            .GetInterfaces()
+            .Any(i =>
+                i.IsGenericType &&
+                i.GetGenericTypeDefinition() == typeof(ICommand<>));
+
+        if (!isCommand)
         {
             return await next();
         }
