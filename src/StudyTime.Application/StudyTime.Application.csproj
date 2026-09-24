@@ -11,6 +11,7 @@
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AutoMapper" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
   </ItemGroup>
