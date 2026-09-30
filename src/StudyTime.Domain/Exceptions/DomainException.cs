@@ -1,4 +1,3 @@
-
 namespace StudyTime.Domain.Exceptions;
 
 public class DomainException : Exception
