@@ -9,5 +9,6 @@
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
     <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
   </ItemGroup>
 </Project>
