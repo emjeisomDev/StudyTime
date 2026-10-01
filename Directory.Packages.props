@@ -3,4 +3,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="MediatR" Version="14.2.0" />
+  </ItemGroup>
 </Project>
