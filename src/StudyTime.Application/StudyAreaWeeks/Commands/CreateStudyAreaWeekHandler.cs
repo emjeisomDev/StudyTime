@@ -206,7 +206,7 @@ public sealed class CreateStudyAreaWeekHandler(
                 isoWeek.WeekNumber,
                 cancellationToken);
 
-        if (currentAssessment is null || currentAssessment.MinutesStudied < currentAssessment.WeekGlobalGoal)
+        if (currentAssessment is not null && currentAssessment.MinutesStudied < currentAssessment.WeekGlobalGoal)
         {
             throw new WeekConfigurationLockedException(
                 "Weekly configuration can only be changed after the " +
