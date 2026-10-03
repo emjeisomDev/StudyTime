@@ -114,6 +114,8 @@ public sealed class UpdateStudyAreaWeekHandler(
                 .GetByWeekStartDateAsync(studyAreaWeek.WeekStartDate, cancellationToken);
 
         var individualGoals = new List<decimal>(allStudyAreaWeeks.Count);
+        var minutesStudied = records.Sum(record => record.Minutes.Value);
+        var totalMinutesStudied = minutesStudied;
 
         foreach (var currentWeek in allStudyAreaWeeks)
         {
@@ -136,6 +138,7 @@ public sealed class UpdateStudyAreaWeekHandler(
             }
 
             individualGoals.Add(currentAssessment.WeekIndividualGoal);
+            totalMinutesStudied = checked(totalMinutesStudied + currentAssessment.MinutesStudied);
         }
 
         var globalGoal = GoalCalculator.CalculateGlobalGoal(individualGoals);
@@ -155,22 +158,6 @@ public sealed class UpdateStudyAreaWeekHandler(
             throw new DomainException(
                 "The weekly assessment associated with the configuration " +
                 "does not match its ISO week.");
-        }
-
-        var minutesStudied = records.Sum(record => record.Minutes.Value);
-
-        var totalMinutesStudied = 0;
-
-        foreach (var currentWeek in allStudyAreaWeeks)
-        {
-            var currentRecords =
-                await _studyRecordRepository.GetByStudyAreaWeekIdAsync(
-                    currentWeek.Id,
-                    cancellationToken);
-
-            totalMinutesStudied = checked(
-                totalMinutesStudied +
-                currentRecords.Sum(record => record.Minutes.Value));
         }
 
         var updatedStudyAreaWeek = new StudyAreaWeek(
