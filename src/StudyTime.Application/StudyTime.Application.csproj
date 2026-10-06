@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\StudyTime.Domain\StudyTime.Domain.csproj" />
+    <PackageReference Include="AutoMapper" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
   </ItemGroup>
