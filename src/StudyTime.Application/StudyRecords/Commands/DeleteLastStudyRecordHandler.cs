@@ -198,10 +198,15 @@ public sealed class DeleteLastStudyRecordHandler(
         _studyAreaWeekAssessmentRepository.Update(
             studyAreaWeekAssessment);
 
-        var globalMinutesStudied = 0;
+        var globalMinutesStudied = individualMinutesStudied;
 
         foreach (var configuredWeek in studyAreaWeeks)
         {
+            if (configuredWeek.Id == studyAreaWeek.Id)
+            {
+                continue;
+            }
+
             var assessment =
                 await _studyAreaWeekAssessmentRepository
                     .GetByStudyAreaWeekIdAsync(
