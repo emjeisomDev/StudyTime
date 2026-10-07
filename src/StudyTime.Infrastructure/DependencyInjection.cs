@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using StudyTime.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
-using StudyTime.Application.StudyAreaWeeks.AutoCreation;
+//using StudyTime.Application.StudyAreaWeeks.AutoCreation;
 // using StudyTime.Domain.Abstractions;
 // using StudyTime.Domain.Abstractions.Repositories;
 // using StudyTime.Infrastructure.Persistence.Repositories;
@@ -47,7 +47,7 @@ public static class DependencyInjection
         // services.AddSingleton<IIsoWeekCalendar, IsoWeekCalendar>();
         // services.AddScoped<IStudyRecordLifoSelector, StudyRecordLifoSelector>();
 
-        services.AddScoped<IAutoCreateNextWeekService, AutoCreateNextWeekService>();
+        // services.AddScoped<IAutoCreateNextWeekService, AutoCreateNextWeekService>();
 
         return services;
     }
