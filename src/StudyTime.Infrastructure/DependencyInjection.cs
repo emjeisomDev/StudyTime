@@ -1,13 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using StudyTime.Domain.Abstractions;
+using StudyTime.Infrastructure.Time;
+using StudyTime.Infrastructure.Calendar;
 using Microsoft.Extensions.Configuration;
 using StudyTime.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
-//using StudyTime.Application.StudyAreaWeeks.AutoCreation;
-// using StudyTime.Domain.Abstractions;
-// using StudyTime.Domain.Abstractions.Repositories;
-// using StudyTime.Infrastructure.Persistence.Repositories;
-// using StudyTime.Infrastructure.Time;
-// using StudyTime.Infrastructure.Calendar;
+using StudyTime.Domain.Abstractions.Repositories;
+using StudyTime.Infrastructure.Persistence.Repositories;
+using StudyTime.Application.StudyAreaWeeks.AutoCreation;
 
 namespace StudyTime.Infrastructure;
 
@@ -34,20 +34,20 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString);
         });
 
-        // services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
-        // services.AddScoped<IStudyAreaWeekAssessmentRepository, StudyAreaWeekAssessmentRepository>();
-        // services.AddScoped<IStudyAreaWeekRepository, StudyAreaWeekRepository>();
-        // services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
-        // services.AddScoped<IStudyRecordRepository, StudyRecordRepository>();
-        // services.AddScoped<IWeeklyAssessmentRepository, WeeklyAssessmentRepository>();
+        services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
+        services.AddScoped<IStudyAreaWeekAssessmentRepository, StudyAreaWeekAssessmentRepository>();
+        services.AddScoped<IStudyAreaWeekRepository, StudyAreaWeekRepository>();
+        services.AddScoped<IStudyPlanRepository, StudyPlanRepository>();
+        services.AddScoped<IStudyRecordRepository, StudyRecordRepository>();
+        services.AddScoped<IWeeklyAssessmentRepository, WeeklyAssessmentRepository>();
 
-        // services.AddScoped<IUnitOfWork, UnitOfWork>();
-        // services.AddSingleton<IClock, SystemClock>();
-        // services.AddSingleton<ICurrentWeekProvider, CurrentWeekProvider>();
-        // services.AddSingleton<IIsoWeekCalendar, IsoWeekCalendar>();
-        // services.AddScoped<IStudyRecordLifoSelector, StudyRecordLifoSelector>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddSingleton<ICurrentWeekProvider, CurrentWeekProvider>();
+        services.AddSingleton<IIsoWeekCalendar, IsoWeekCalendar>();
+        services.AddScoped<IStudyRecordLifoSelector, StudyRecordLifoSelector>();
 
-        // services.AddScoped<IAutoCreateNextWeekService, AutoCreateNextWeekService>();
+        services.AddScoped<IAutoCreateNextWeekService, AutoCreateNextWeekService>();
 
         return services;
     }
