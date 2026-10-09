@@ -1,7 +1,8 @@
-using StudyTime.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using StudyTime.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using StudyTime.Domain.Entities;
+using StudyTime.Infrastructure.Persistence;
 
 namespace StudyTime.Infrastructure.Tests.Persistence;
 
@@ -12,8 +13,9 @@ public sealed class StudyAreaWeekConfigurationTests
     {
         using var context = CreateContext();
 
-        var entityType = context.Model.FindEntityType(
-            typeof(StudyAreaWeek));
+        // EF Core 10: check constraints só existem no modelo de design-time.
+        IModel designTimeModel = context.GetService<IDesignTimeModel>().Model;
+        var entityType = designTimeModel.FindEntityType(typeof(StudyAreaWeek));
 
         Assert.NotNull(entityType);
 

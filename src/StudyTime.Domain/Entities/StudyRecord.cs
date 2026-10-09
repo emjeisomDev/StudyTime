@@ -28,7 +28,8 @@ public sealed class StudyRecord
         if (id == Guid.Empty)
             throw new DomainException("StudyRecord id cannot be empty.");
 
-        ArgumentNullException.ThrowIfNull(minutes);
+        if (minutes is null)
+            throw new DomainException("StudyRecord minutes cannot be null.");
 
         if (studyAreaWeekId == Guid.Empty)
             throw new DomainException("StudyAreaWeekId cannot be empty.");
