@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\StudyTime.Application\StudyTime.Application.csproj" />
     <ProjectReference Include="..\StudyTime.Infrastructure\StudyTime.Infrastructure.csproj" />
   </ItemGroup>
 

@@ -1,12 +1,11 @@
 using StudyTime.Api.Filters;
 using StudyTime.Api.Middleware;
+using StudyTime.Application;
 using StudyTime.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
-
-// Registra o DbContext e demais serviços da Infrastructure
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers(options =>
