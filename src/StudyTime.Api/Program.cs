@@ -1,4 +1,5 @@
 using StudyTime.Api.Filters;
+using StudyTime.Api.Extensions;
 using StudyTime.Api.Middleware;
 using StudyTime.Application;
 using StudyTime.Infrastructure;
@@ -14,6 +15,7 @@ builder.Services.AddControllers(options =>
 });
 
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerDocumentation();
 
 builder.Services.AddCors(options =>
 {
@@ -29,7 +31,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks();
 
 builder.Services.AddScoped<ProblemDetailsFactory>();
-builder.Services.AddTransient<ExceptionHandlingMiddleware>();
 
 var app = builder.Build();
 
@@ -39,7 +40,8 @@ app.UseCors("AngularFrontend");
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.MapControllers();
