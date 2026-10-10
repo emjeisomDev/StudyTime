@@ -1,13 +1,17 @@
+using StudyTime.Application;
 using StudyTime.Api.Filters;
+using StudyTime.Api.Mappings;
 using StudyTime.Api.Extensions;
 using StudyTime.Api.Middleware;
-using StudyTime.Application;
 using StudyTime.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Registra os mapeamentos DTO -> Response da camada API.
+builder.Services.AddAutoMapper(cfg => { }, typeof(ApiMappingProfile).Assembly);
 
 builder.Services.AddControllers(options =>
 {
