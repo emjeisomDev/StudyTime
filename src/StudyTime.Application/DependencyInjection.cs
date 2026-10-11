@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using StudyTime.Application.Behaviors;
 
 namespace StudyTime.Application;
 
@@ -11,9 +12,10 @@ public static class DependencyInjection
         services.AddMediatR(configuration =>
         {
             configuration.RegisterServicesFromAssembly(assembly);
+            configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            configuration.AddOpenBehavior(typeof(TransactionBehavior<,>));
         });
 
-        // Assinatura correta para AutoMapper 13+
         services.AddAutoMapper(cfg => { }, assembly);
 
         return services;

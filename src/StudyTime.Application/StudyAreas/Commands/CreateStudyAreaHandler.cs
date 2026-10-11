@@ -12,12 +12,9 @@ public sealed class CreateStudyAreaHandler(
     IUnitOfWork unitOfWork)
     : IRequestHandler<CreateStudyAreaCommand, StudyAreaDto>
 {
-    private readonly IStudyAreaRepository _studyAreaRepository =
-        studyAreaRepository ?? throw new ArgumentNullException(
-            nameof(studyAreaRepository));
+    private readonly IStudyAreaRepository _studyAreaRepository = studyAreaRepository ?? throw new ArgumentNullException(nameof(studyAreaRepository));
 
-    private readonly IUnitOfWork _unitOfWork =
-        unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     public async Task<StudyAreaDto> Handle(
         CreateStudyAreaCommand request,

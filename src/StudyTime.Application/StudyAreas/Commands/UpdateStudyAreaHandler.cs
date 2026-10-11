@@ -1,17 +1,19 @@
-using MediatR;
 using StudyTime.Application.Dtos;
-using StudyTime.Domain.Abstractions.Repositories;
 using StudyTime.Domain.Entities;
 using StudyTime.Domain.ValueObjects;
+using StudyTime.Domain.Abstractions;
+using StudyTime.Domain.Abstractions.Repositories;
+using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyAreas.Commands;
 
-public sealed class UpdateStudyAreaHandler(IStudyAreaRepository studyAreaRepository)
-    : IRequestHandler<UpdateStudyAreaCommand, StudyAreaDto>
+public sealed class UpdateStudyAreaHandler(
+    IStudyAreaRepository studyAreaRepository,
+    IUnitOfWork unitOfWork)
+    : ICommandHandler<UpdateStudyAreaCommand, StudyAreaDto>
 {
-    private readonly IStudyAreaRepository _studyAreaRepository =
-        studyAreaRepository ?? throw new ArgumentNullException(
-            nameof(studyAreaRepository));
+    private readonly IStudyAreaRepository _studyAreaRepository = studyAreaRepository ?? throw new ArgumentNullException(nameof(studyAreaRepository));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     public async Task<StudyAreaDto> Handle(UpdateStudyAreaCommand request, CancellationToken cancellationToken)
     {
@@ -48,12 +50,16 @@ public sealed class UpdateStudyAreaHandler(IStudyAreaRepository studyAreaReposit
             ? new Minutes(request.StdWeekStudyTime.Value)
             : existingStudyArea.StdWeekStudyTime;
 
+        // A entidade permanece imutável: criamos uma nova instância.
         var updatedStudyArea = new StudyArea(
             existingStudyArea.Id,
             name,
             weeklyStudyTime);
 
         _studyAreaRepository.Update(updatedStudyArea);
+
+        // Persiste as alterações dentro da transação aberta pelo behavior.
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new StudyAreaDto(
             updatedStudyArea.Id,
