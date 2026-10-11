@@ -20,7 +20,7 @@ namespace StudyTime.Api.Controllers;
 //     states are not accepted.
 **/
 [ApiController]
-[Route("study-plans")]
+[Route("api/v1/study-plans")]
 [Produces("application/json")]
 public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : ControllerBase
 {

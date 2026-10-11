@@ -17,7 +17,7 @@ namespace StudyTime.Api.Controllers;
 //     creation of a third file.
 **/
 [ApiController]
-[Route("study-areas")]
+[Route("api/v1/study-areas")]
 [Produces("application/json")]
 public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : ControllerBase
 {
