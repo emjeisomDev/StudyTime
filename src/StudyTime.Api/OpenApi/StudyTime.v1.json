@@ -1,0 +1,924 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StudyTime API",
+    "version": "v1",
+    "description": "API REST para gerenciamento de áreas de estudo, planos, configurações semanais e registros de estudo. As metas atingidas são valores derivados pela aplicação."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5020",
+      "description": "Desenvolvimento HTTP"
+    },
+    {
+      "url": "https://localhost:7114",
+      "description": "Desenvolvimento HTTPS"
+    }
+  ],
+  "tags": [
+    {
+      "name": "StudyAreas",
+      "description": "Áreas de estudo."
+    },
+    {
+      "name": "StudyPlans",
+      "description": "Planos de estudo."
+    },
+    {
+      "name": "StudyAreaWeeks",
+      "description": "Configuração semanal por área."
+    },
+    {
+      "name": "Bootstrap",
+      "description": "Inicialização da configuração semanal do sistema."
+    },
+    {
+      "name": "StudyRecords",
+      "description": "Criação, consulta e exclusão LIFO de registros de estudo."
+    },
+    {
+      "name": "Weeks",
+      "description": "Consultas consolidadas de semanas."
+    }
+  ],
+  "paths": {
+    "/study-areas": {
+      "get": {
+        "tags": ["StudyAreas"],
+        "summary": "Lista as áreas de estudo",
+        "operationId": "GetStudyAreas",
+        "responses": {
+          "200": {
+            "description": "Lista de áreas de estudo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyAreaResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["StudyAreas"],
+        "summary": "Cria uma área de estudo",
+        "operationId": "CreateStudyArea",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyAreaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Área de estudo criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyAreaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/study-plans": {
+      "get": {
+        "tags": ["StudyPlans"],
+        "summary": "Lista os planos de estudo",
+        "operationId": "GetStudyPlans",
+        "responses": {
+          "200": {
+            "description": "Lista de planos de estudo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyPlanResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["StudyPlans"],
+        "summary": "Cria um plano de estudo",
+        "operationId": "CreateStudyPlan",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plano de estudo criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyPlanResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/study-area-weeks": {
+      "post": {
+        "tags": ["StudyAreaWeeks"],
+        "summary": "Cria uma configuração semanal individual",
+        "operationId": "CreateStudyAreaWeek",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyAreaWeekRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Configuração semanal criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyAreaWeekResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/study-area-weeks/batch": {
+      "post": {
+        "tags": ["StudyAreaWeeks"],
+        "summary": "Cria configurações semanais em lote",
+        "description": "A configuração é processada como uma operação lógica única. As regras de metas, unicidade, planos ativos e consistência da avaliação semanal são verificadas pela aplicação.",
+        "operationId": "CreateStudyAreaWeeksBatch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyAreaWeeksBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Configurações semanais criadas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyAreaWeekResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/study-area-weeks/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/Id"
+        }
+      ],
+      "get": {
+        "tags": ["StudyAreaWeeks"],
+        "summary": "Consulta uma configuração semanal",
+        "operationId": "GetStudyAreaWeekById",
+        "responses": {
+          "200": {
+            "description": "Configuração semanal encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyAreaWeekResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["StudyAreaWeeks"],
+        "summary": "Atualiza uma configuração semanal",
+        "operationId": "UpdateStudyAreaWeek",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudyAreaWeekRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuração semanal atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyAreaWeekResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["StudyAreaWeeks"],
+        "summary": "Remove uma configuração semanal",
+        "operationId": "DeleteStudyAreaWeek",
+        "responses": {
+          "204": {
+            "description": "Configuração semanal removida."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/bootstrap": {
+      "post": {
+        "tags": ["Bootstrap"],
+        "summary": "Inicializa a configuração semanal",
+        "description": "Inicializa o sistema para a semana corrente. A aplicação valida a configuração inicial e controla a atomicidade da operação.",
+        "operationId": "BootstrapSystem",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BootstrapRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Configuração inicial criada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyAreaWeekResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/study-area-weeks/{studyAreaWeekId}/study-records": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/StudyAreaWeekId"
+        }
+      ],
+      "post": {
+        "tags": ["StudyRecords"],
+        "summary": "Cria um registro de estudo",
+        "description": "Cria um registro imutável para uma configuração semanal. A data e o instante de criação são determinados pela aplicação/infraestrutura.",
+        "operationId": "CreateStudyRecord",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyRecordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registro de estudo criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyRecordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      },
+      "get": {
+        "tags": ["StudyRecords"],
+        "summary": "Lista os registros de uma configuração semanal",
+        "operationId": "GetStudyRecordsByWeek",
+        "responses": {
+          "200": {
+            "description": "Registros associados à configuração semanal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StudyRecordResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/study-area-weeks/{studyAreaWeekId}/study-records/last": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/StudyAreaWeekId"
+        }
+      ],
+      "delete": {
+        "tags": ["StudyRecords"],
+        "summary": "Exclui o último registro elegível",
+        "description": "Exclui o registro selecionado pela aplicação conforme LIFO: created_at descendente e id descendente. A exclusão só é permitida para a semana corrente.",
+        "operationId": "DeleteLastStudyRecord",
+        "responses": {
+          "204": {
+            "description": "Registro removido."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    },
+    "/weeks/previous-summary": {
+      "get": {
+        "tags": ["Weeks"],
+        "summary": "Consulta o resumo consolidado da semana anterior",
+        "description": "Retorna a avaliação global e os itens individuais. goalAchieved é derivado pela aplicação e não é persistido.",
+        "operationId": "GetPreviousWeekSummary",
+        "responses": {
+          "200": {
+            "description": "Resumo da semana anterior.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviousWeekSummaryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableEntity"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Identificador da configuração semanal.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "StudyAreaWeekId": {
+        "name": "studyAreaWeekId",
+        "in": "path",
+        "required": true,
+        "description": "Identificador da configuração semanal da área de estudo.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Requisição inválida.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflito com uma regra de negócio.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "Regra de domínio violada.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          },
+          "traceId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "CreateStudyAreaRequest": {
+        "type": "object",
+        "required": ["name", "stdWeekStudyTime"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "stdWeekStudyTime": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      },
+      "StudyAreaResponse": {
+        "type": "object",
+        "required": ["id", "name", "stdWeekStudyTime"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "stdWeekStudyTime": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CreateStudyPlanRequest": {
+        "type": "object",
+        "required": ["name", "coefficient"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "coefficient": {
+            "type": "number",
+            "format": "double",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "StudyPlanResponse": {
+        "type": "object",
+        "required": ["id", "name", "coefficient", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "coefficient": {
+            "type": "number",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"]
+          }
+        }
+      },
+      "StudyAreaWeekItemRequest": {
+        "type": "object",
+        "required": ["studyAreaId", "studyPlanId"],
+        "properties": {
+          "studyAreaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyPlanId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CreateStudyAreaWeekRequest": {
+        "type": "object",
+        "required": ["studyAreaId", "studyPlanId", "weekStartDate"],
+        "properties": {
+          "studyAreaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekStartDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Deve ser uma segunda-feira, dentro do horizonte permitido pela regra de negócio."
+          }
+        }
+      },
+      "CreateStudyAreaWeeksBatchRequest": {
+        "type": "object",
+        "required": ["weekStartDate", "items"],
+        "properties": {
+          "weekStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/StudyAreaWeekItemRequest"
+            }
+          }
+        }
+      },
+      "BootstrapRequest": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/StudyAreaWeekItemRequest"
+            }
+          }
+        }
+      },
+      "UpdateStudyAreaWeekRequest": {
+        "type": "object",
+        "required": ["studyAreaId", "studyPlanId"],
+        "properties": {
+          "studyAreaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyPlanId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "StudyAreaWeekResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "weekStartDate",
+          "studyAreaId",
+          "studyPlanId",
+          "weeklyAssessmentId",
+          "weekIndividualGoal",
+          "minutesStudied",
+          "goalAchieved"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "studyAreaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyPlanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weeklyAssessmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekIndividualGoal": {
+            "type": "number",
+            "format": "double"
+          },
+          "minutesStudied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalAchieved": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Valor derivado pela aplicação."
+          }
+        }
+      },
+      "CreateStudyRecordRequest": {
+        "type": "object",
+        "required": ["minutes"],
+        "properties": {
+          "minutes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        }
+      },
+      "StudyRecordResponse": {
+        "type": "object",
+        "required": ["id", "date", "createdAt", "minutes", "studyAreaWeekId"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "studyAreaWeekId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "WeeklyAssessmentResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "weekNumber",
+          "year",
+          "weekGlobalGoal",
+          "minutesStudied",
+          "goalAchieved"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weekNumber": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 53
+          },
+          "year": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weekGlobalGoal": {
+            "type": "number",
+            "format": "double"
+          },
+          "minutesStudied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalAchieved": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Valor derivado pela aplicação."
+          }
+        }
+      },
+      "PreviousWeekSummaryItemResponse": {
+        "type": "object",
+        "required": [
+          "studyArea",
+          "studyPlan",
+          "weekIndividualGoal",
+          "minutesStudied",
+          "goalAchieved"
+        ],
+        "properties": {
+          "studyArea": {
+            "$ref": "#/components/schemas/StudyAreaResponse"
+          },
+          "studyPlan": {
+            "$ref": "#/components/schemas/StudyPlanResponse"
+          },
+          "weekIndividualGoal": {
+            "type": "number",
+            "format": "double"
+          },
+          "minutesStudied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "goalAchieved": {
+            "type": "boolean",
+            "readOnly": true
+          }
+        }
+      },
+      "PreviousWeekSummaryResponse": {
+        "type": "object",
+        "required": ["weekStartDate", "weeklyAssessment", "items"],
+        "properties": {
+          "weekStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "weeklyAssessment": {
+            "$ref": "#/components/schemas/WeeklyAssessmentResponse"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PreviousWeekSummaryItemResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}
