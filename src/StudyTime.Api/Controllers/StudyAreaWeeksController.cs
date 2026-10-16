@@ -169,9 +169,10 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
                 "The study area week identifier cannot be empty."));
         }
 
-        await _mediator.Send(
-            new DeleteStudyAreaWeekCommand(id),
-            cancellationToken);
+        // Force the response-bearing MediatR overload.
+        // ICommand also implements non-generic IRequest, so an untyped Send can select
+        // IRequestHandler<DeleteStudyAreaWeekCommand> instead of IRequestHandler<DeleteStudyAreaWeekCommand, Unit>.
+        await _mediator.Send<Unit>(new DeleteStudyAreaWeekCommand(id), cancellationToken);
 
         return NoContent();
     }

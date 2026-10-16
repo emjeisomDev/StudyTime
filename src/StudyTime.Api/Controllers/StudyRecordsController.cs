@@ -146,4 +146,3 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
         };
     }
 }
-
