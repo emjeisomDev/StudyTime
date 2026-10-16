@@ -3,13 +3,10 @@ using System.ComponentModel.DataAnnotations;
 namespace StudyTime.Api.Contracts.Requests;
 
 public sealed record CreateStudyPlanRequest(
-    [property: Required]
-    [property: StringLength(80, MinimumLength = 1)]
+    [param: Required]
+    [param: StringLength(80, MinimumLength = 1)]
     string Name,
-    [property: Range(
-        typeof(decimal),
-        "0.0000000001",
-        "79228162514264337593543950335")]
+    [param: Range(typeof(decimal), "0.0000000001", "79228162514264337593543950335", ParseLimitsInInvariantCulture = true)]
     decimal Coefficient) : IValidatableObject
 {
     public IEnumerable<ValidationResult> Validate(

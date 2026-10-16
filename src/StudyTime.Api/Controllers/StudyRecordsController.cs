@@ -1,9 +1,10 @@
-using AutoMapper;
 using MediatR;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StudyTime.Application.Dtos;
+using StudyTime.Domain.Exceptions;
 using StudyTime.Api.Contracts.Requests;
 using StudyTime.Api.Contracts.Responses;
-using StudyTime.Application.Dtos;
 using StudyTime.Application.StudyRecords.Commands;
 using StudyTime.Application.StudyRecords.Queries;
 
@@ -20,19 +21,11 @@ namespace StudyTime.Api.Controllers;
 [ApiController]
 [Route("api/v1/study-area-weeks/{studyAreaWeekId:guid}/study-records")]
 [Produces("application/json")]
-public sealed class StudyRecordsController(
-    IMediator mediator,
-    IMapper mapper) : ControllerBase
+public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) : ControllerBase
 {
-    private readonly IMediator _mediator =
-        mediator ?? throw new ArgumentNullException(nameof(mediator));
+    private readonly IMediator _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+    private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 
-    private readonly IMapper _mapper =
-        mapper ?? throw new ArgumentNullException(nameof(mapper));
-
-    /// <summary>
-    /// Creates an immutable study record for a study area week.
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(StudyRecordResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -63,9 +56,6 @@ public sealed class StudyRecordsController(
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
-    /// <summary>
-    /// Lists the study records associated with a study area week.
-    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<StudyRecordResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -101,9 +91,6 @@ public sealed class StudyRecordsController(
         }
     }
 
-    /// <summary>
-    /// Deletes the last eligible study record using the application's LIFO rules.
-    /// </summary>
     [HttpDelete("last")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -124,11 +111,21 @@ public sealed class StudyRecordsController(
 
         try
         {
-            await _mediator.Send(
+            // Force the response-bearing MediatR overload. 
+            // ICommand also implements non-generic IRequest, so an untyped Send can select 
+            // the wrong overload when its result is discarded.
+            await _mediator.Send<Unit>(
                 new DeleteLastStudyRecordCommand(studyAreaWeekId),
                 cancellationToken);
 
             return NoContent();
+        }
+        catch (NoEligibleStudyRecordException exception)
+        {
+            return NotFound(CreateProblem(
+                StatusCodes.Status404NotFound,
+                "Resource not found",
+                exception.Message));
         }
         catch (KeyNotFoundException exception)
         {
@@ -139,10 +136,7 @@ public sealed class StudyRecordsController(
         }
     }
 
-    private static ProblemDetails CreateProblem(
-        int status,
-        string title,
-        string detail)
+    private static ProblemDetails CreateProblem(int status, string title, string detail)
     {
         return new ProblemDetails
         {
@@ -152,3 +146,4 @@ public sealed class StudyRecordsController(
         };
     }
 }
+

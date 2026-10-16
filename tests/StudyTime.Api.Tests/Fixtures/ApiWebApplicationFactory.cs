@@ -2,10 +2,12 @@ using Testcontainers.PostgreSql;
 using Microsoft.AspNetCore.Hosting;
 using StudyTime.Domain.Abstractions;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using StudyTime.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace StudyTime.Api.Tests.Fixtures;
@@ -43,7 +45,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly PostgreSqlContainer _postgres =
         new PostgreSqlBuilder()
-            .WithImage("postgres:17-alpine")
+            .WithImage("postgres:17")
             .WithDatabase("studytime_tests")
             .WithUsername("studytime_test")
             .WithPassword("studytime_test_password")
@@ -79,6 +81,14 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
+            // Força o DbContext de integração a usar o PostgreSQL do Testcontainers.
+            // O registro original pode ter capturado a connection string do appsettings.
+            services.RemoveAll<IDbContextOptionsConfiguration<StudyTimeDbContext>>();
+            services.RemoveAll<DbContextOptions<StudyTimeDbContext>>();
+            services.RemoveAll<StudyTimeDbContext>();
+            services.AddDbContext<StudyTimeDbContext>(options =>
+                options.UseNpgsql(_postgres.GetConnectionString()));
+
             services.RemoveAll<IClock>();
             services.AddSingleton<IClock>(Clock);
         });
@@ -113,8 +123,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
     {
         if (!_postgresStarted)
         {
-            throw new InvalidOperationException(@"Start PostgreSQL by calling StartPostgresAsync before 
-                                                    creating or resetting the test database.");
+            throw new InvalidOperationException(@"Start PostgreSQL by calling StartPostgresAsync before creating or resetting the test database.");
         }
     }
 

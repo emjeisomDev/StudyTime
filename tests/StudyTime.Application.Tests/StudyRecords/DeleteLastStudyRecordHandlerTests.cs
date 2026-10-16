@@ -57,9 +57,9 @@ public sealed class DeleteLastStudyRecordHandlerTests
             studyAreaWeekId);
 
         var remainingRecords = new List<StudyRecord>
-        {
-            firstRecord
-        };
+            {
+                firstRecord
+            };
 
         var studyAreaWeekRepository =
             new Mock<IStudyAreaWeekRepository>();
@@ -79,7 +79,7 @@ public sealed class DeleteLastStudyRecordHandlerTests
             .ReturnsAsync(
                 new List<StudyAreaWeek>
                 {
-                    studyAreaWeek
+                        studyAreaWeek
                 });
 
         var studyAreaWeekAssessmentRepository =
@@ -148,14 +148,14 @@ public sealed class DeleteLastStudyRecordHandlerTests
             .ReturnsAsync(1);
 
         var handler = new DeleteLastStudyRecordHandler(
-            studyAreaWeekRepository.Object,
-            studyAreaWeekAssessmentRepository.Object,
-            weeklyAssessmentRepository.Object,
-            studyRecordRepository.Object,
-            lifoSelector.Object,
-            currentWeekProvider.Object,
+            unitOfWork.Object,
             isoWeekCalendar.Object,
-            unitOfWork.Object);
+            currentWeekProvider.Object,
+            studyRecordRepository.Object,
+            studyAreaWeekRepository.Object,
+            lifoSelector.Object,
+            weeklyAssessmentRepository.Object,
+            studyAreaWeekAssessmentRepository.Object);
 
         await handler.Handle(
             new DeleteLastStudyRecordCommand(studyAreaWeekId),
@@ -239,7 +239,7 @@ public sealed class DeleteLastStudyRecordHandlerTests
             .ReturnsAsync(
                 new List<StudyAreaWeek>
                 {
-                    studyAreaWeek
+                        studyAreaWeek
                 });
 
         var assessmentRepository =
@@ -295,14 +295,14 @@ public sealed class DeleteLastStudyRecordHandlerTests
             new Mock<IUnitOfWork>();
 
         var handler = new DeleteLastStudyRecordHandler(
-            studyAreaWeekRepository.Object,
-            assessmentRepository.Object,
-            weeklyAssessmentRepository.Object,
-            studyRecordRepository.Object,
-            lifoSelector.Object,
-            currentWeekProvider.Object,
+            unitOfWork.Object,
             isoWeekCalendar.Object,
-            unitOfWork.Object);
+            currentWeekProvider.Object,
+            studyRecordRepository.Object,
+            studyAreaWeekRepository.Object,
+            lifoSelector.Object,
+            weeklyAssessmentRepository.Object,
+            assessmentRepository.Object);
 
         await Assert.ThrowsAsync<NoEligibleStudyRecordException>(
             () => handler.Handle(
@@ -372,14 +372,14 @@ public sealed class DeleteLastStudyRecordHandlerTests
             new Mock<IUnitOfWork>();
 
         var handler = new DeleteLastStudyRecordHandler(
-            studyAreaWeekRepository.Object,
-            assessmentRepository.Object,
-            weeklyAssessmentRepository.Object,
-            studyRecordRepository.Object,
-            lifoSelector.Object,
-            currentWeekProvider.Object,
+            unitOfWork.Object,
             isoWeekCalendar.Object,
-            unitOfWork.Object);
+            currentWeekProvider.Object,
+            studyRecordRepository.Object,
+            studyAreaWeekRepository.Object,
+            lifoSelector.Object,
+            weeklyAssessmentRepository.Object,
+            assessmentRepository.Object);
 
         await Assert.ThrowsAsync<RecordNotInCurrentWeekException>(
             () => handler.Handle(
@@ -423,8 +423,7 @@ public sealed class DeleteLastStudyRecordHandlerTests
             Guid.NewGuid(),
             weeklyAssessmentId);
 
-        var studyAreaWeekRepository =
-            new Mock<IStudyAreaWeekRepository>();
+        var studyAreaWeekRepository = new Mock<IStudyAreaWeekRepository>();
 
         studyAreaWeekRepository
             .Setup(repository =>
@@ -441,61 +440,44 @@ public sealed class DeleteLastStudyRecordHandlerTests
             .ReturnsAsync(
                 new List<StudyAreaWeek>
                 {
-                    studyAreaWeek
+                        studyAreaWeek
                 });
 
-        var currentWeekProvider =
-            new Mock<ICurrentWeekProvider>();
+        var currentWeekProvider = new Mock<ICurrentWeekProvider>();
 
         currentWeekProvider
             .Setup(provider => provider.GetCurrentWeek())
             .Returns(new WeekRange(weekStartDate));
 
-        var isoWeekCalendar =
-            new Mock<IIsoWeekCalendar>();
+        var isoWeekCalendar = new Mock<IIsoWeekCalendar>();
 
         isoWeekCalendar
-            .Setup(calendar =>
-                calendar.GetIsoWeek(weekStartDate))
+            .Setup(calendar => calendar.GetIsoWeek(weekStartDate))
             .Returns(new IsoWeek(isoYear, isoWeek));
 
-        var weeklyAssessmentRepository =
-            new Mock<IWeeklyAssessmentRepository>();
+        var weeklyAssessmentRepository = new Mock<IWeeklyAssessmentRepository>();
 
         weeklyAssessmentRepository
-            .Setup(repository =>
-                repository.GetByYearAndWeekNumberAsync(
-                    isoYear,
-                    isoWeek,
-                    It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetByYearAndWeekNumberAsync(isoYear, isoWeek, It.IsAny<CancellationToken>()))
             .ReturnsAsync((WeeklyAssessment?)null);
 
-        var assessmentRepository =
-            new Mock<IStudyAreaWeekAssessmentRepository>();
-
-        var studyRecordRepository =
-            new Mock<IStudyRecordRepository>();
-
-        var lifoSelector =
-            new Mock<IStudyRecordLifoSelector>();
-
-        var unitOfWork =
-            new Mock<IUnitOfWork>();
+        var assessmentRepository = new Mock<IStudyAreaWeekAssessmentRepository>();
+        var studyRecordRepository = new Mock<IStudyRecordRepository>();
+        var lifoSelector = new Mock<IStudyRecordLifoSelector>();
+        var unitOfWork = new Mock<IUnitOfWork>();
 
         var handler = new DeleteLastStudyRecordHandler(
-            studyAreaWeekRepository.Object,
-            assessmentRepository.Object,
-            weeklyAssessmentRepository.Object,
-            studyRecordRepository.Object,
-            lifoSelector.Object,
-            currentWeekProvider.Object,
+            unitOfWork.Object,
             isoWeekCalendar.Object,
-            unitOfWork.Object);
+            currentWeekProvider.Object,
+            studyRecordRepository.Object,
+            studyAreaWeekRepository.Object,
+            lifoSelector.Object,
+            weeklyAssessmentRepository.Object,
+            assessmentRepository.Object);
 
         await Assert.ThrowsAsync<DomainException>(
-            () => handler.Handle(
-                new DeleteLastStudyRecordCommand(studyAreaWeekId),
-                CancellationToken.None));
+            () => handler.Handle(new DeleteLastStudyRecordCommand(studyAreaWeekId), CancellationToken.None));
 
         lifoSelector.Verify(
             selector => selector.SelectLastEligibleAsync(
@@ -504,13 +486,9 @@ public sealed class DeleteLastStudyRecordHandlerTests
             Times.Never);
 
         studyRecordRepository.Verify(
-            repository => repository.Delete(
-                It.IsAny<StudyRecord>()),
+            repository => repository.Delete(It.IsAny<StudyRecord>()),
             Times.Never);
 
-        unitOfWork.Verify(
-            work => work.SaveChangesAsync(
-                It.IsAny<CancellationToken>()),
-            Times.Never);
+        unitOfWork.Verify(work => work.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

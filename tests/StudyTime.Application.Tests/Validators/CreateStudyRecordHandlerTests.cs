@@ -99,31 +99,22 @@ public sealed class CreateStudyRecordHandlerTests
                     studyAreaWeekId,
                     It.IsAny<CancellationToken>()))
             .ReturnsAsync(
-                () =>
-                    addedRecord is null
-                        ? new List<StudyRecord>
-                        {
-                            existingRecord
-                        }
-                        : new List<StudyRecord>
-                        {
-                            existingRecord,
-                            addedRecord
-                        });
+                new List<StudyRecord>
+                {
+                        existingRecord
+                });
 
-        var handler =
-            new CreateStudyRecordHandler(
-                repositories.StudyAreaWeekRepository.Object,
-                repositories.StudyAreaWeekAssessmentRepository.Object,
-                repositories.WeeklyAssessmentRepository.Object,
-                repositories.StudyRecordRepository.Object,
-                repositories.CurrentWeekProvider.Object,
-                repositories.IsoWeekCalendar.Object,
+        var handler = new CreateStudyRecordHandler(
                 repositories.Clock.Object,
-                repositories.UnitOfWork.Object);
+                repositories.UnitOfWork.Object,
+                repositories.IsoWeekCalendar.Object,
+                repositories.CurrentWeekProvider.Object,
+                repositories.StudyRecordRepository.Object,
+                repositories.StudyAreaWeekRepository.Object,
+                repositories.WeeklyAssessmentRepository.Object,
+                repositories.StudyAreaWeekAssessmentRepository.Object);
 
-        var result =
-            await handler.Handle(
+        var result = await handler.Handle(
                 new CreateStudyRecordCommand(
                     studyAreaWeekId,
                     120),
@@ -138,37 +129,14 @@ public sealed class CreateStudyRecordHandlerTests
         Assert.NotNull(addedRecord);
         Assert.Equal(120, addedRecord!.Minutes.Value);
 
-        Assert.Equal(
-            420,
-            individualAssessment.MinutesStudied);
+        Assert.Equal(420, individualAssessment.MinutesStudied);
+        Assert.Equal(420, weeklyAssessment.MinutesStudied);
+        Assert.Equal(1800m, individualAssessment.WeekIndividualGoal);
+        Assert.Equal(1800m, weeklyAssessment.WeekGlobalGoal);
 
-        Assert.Equal(
-            420,
-            weeklyAssessment.MinutesStudied);
-
-        Assert.Equal(
-            1800m,
-            individualAssessment.WeekIndividualGoal);
-
-        Assert.Equal(
-            1800m,
-            weeklyAssessment.WeekGlobalGoal);
-
-        repositories.StudyAreaWeekAssessmentRepository.Verify(
-            repository =>
-                repository.Update(individualAssessment),
-            Times.Once);
-
-        repositories.WeeklyAssessmentRepository.Verify(
-            repository =>
-                repository.Update(weeklyAssessment),
-            Times.Once);
-
-        repositories.UnitOfWork.Verify(
-            unitOfWork =>
-                unitOfWork.SaveChangesAsync(
-                    It.IsAny<CancellationToken>()),
-            Times.Once);
+        repositories.StudyAreaWeekAssessmentRepository.Verify(repository => repository.Update(individualAssessment), Times.Once);
+        repositories.WeeklyAssessmentRepository.Verify(repository => repository.Update(weeklyAssessment), Times.Once);
+        repositories.UnitOfWork.Verify(unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -177,15 +145,13 @@ public sealed class CreateStudyRecordHandlerTests
         var currentWeekStart = new DateOnly(2026, 10, 5);
         var previousWeekStart = currentWeekStart.AddDays(-7);
 
-        var studyAreaWeek =
-            new StudyAreaWeek(
+        var studyAreaWeek = new StudyAreaWeek(
                 previousWeekStart,
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 Guid.NewGuid());
 
-        var repositories =
-            CreateRepositories(
+        var repositories = CreateRepositories(
                 studyAreaWeek,
                 null,
                 null,
@@ -198,20 +164,18 @@ public sealed class CreateStudyRecordHandlerTests
             .Returns(
                 new WeekRange(currentWeekStart));
 
-        var handler =
-            new CreateStudyRecordHandler(
-                repositories.StudyAreaWeekRepository.Object,
-                repositories.StudyAreaWeekAssessmentRepository.Object,
-                repositories.WeeklyAssessmentRepository.Object,
-                repositories.StudyRecordRepository.Object,
-                repositories.CurrentWeekProvider.Object,
-                repositories.IsoWeekCalendar.Object,
+        var handler = new CreateStudyRecordHandler(
                 repositories.Clock.Object,
-                repositories.UnitOfWork.Object);
+                repositories.UnitOfWork.Object,
+                repositories.IsoWeekCalendar.Object,
+                repositories.CurrentWeekProvider.Object,
+                repositories.StudyRecordRepository.Object,
+                repositories.StudyAreaWeekRepository.Object,
+                repositories.WeeklyAssessmentRepository.Object,
+                repositories.StudyAreaWeekAssessmentRepository.Object);
 
         await Assert.ThrowsAsync<Domain.Exceptions.RecordNotInCurrentWeekException>(
-            () =>
-                handler.Handle(
+            () => handler.Handle(
                     new CreateStudyRecordCommand(
                         studyAreaWeek.Id,
                         60),
@@ -236,15 +200,13 @@ public sealed class CreateStudyRecordHandlerTests
     {
         var weekStart = new DateOnly(2026, 10, 5);
 
-        var studyAreaWeek =
-            new StudyAreaWeek(
+        var studyAreaWeek = new StudyAreaWeek(
                 weekStart,
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 Guid.NewGuid());
 
-        var repositories =
-            CreateRepositories(
+        var repositories = CreateRepositories(
                 studyAreaWeek,
                 null,
                 null,
@@ -272,20 +234,18 @@ public sealed class CreateStudyRecordHandlerTests
             .ReturnsAsync(
                 (WeeklyAssessment?)null);
 
-        var handler =
-            new CreateStudyRecordHandler(
-                repositories.StudyAreaWeekRepository.Object,
-                repositories.StudyAreaWeekAssessmentRepository.Object,
-                repositories.WeeklyAssessmentRepository.Object,
-                repositories.StudyRecordRepository.Object,
-                repositories.CurrentWeekProvider.Object,
-                repositories.IsoWeekCalendar.Object,
+        var handler = new CreateStudyRecordHandler(
                 repositories.Clock.Object,
-                repositories.UnitOfWork.Object);
+                repositories.UnitOfWork.Object,
+                repositories.IsoWeekCalendar.Object,
+                repositories.CurrentWeekProvider.Object,
+                repositories.StudyRecordRepository.Object,
+                repositories.StudyAreaWeekRepository.Object,
+                repositories.WeeklyAssessmentRepository.Object,
+                repositories.StudyAreaWeekAssessmentRepository.Object);
 
         await Assert.ThrowsAsync<DomainException>(
-            () =>
-                handler.Handle(
+            () => handler.Handle(
                     new CreateStudyRecordCommand(
                         studyAreaWeek.Id,
                         60),
@@ -312,29 +272,14 @@ public sealed class CreateStudyRecordHandlerTests
         IReadOnlyList<StudyAreaWeek> studyAreaWeeks,
         IReadOnlyList<StudyRecord> records)
     {
-        var studyAreaWeekRepository =
-            new Mock<IStudyAreaWeekRepository>();
-
-        var studyAreaWeekAssessmentRepository =
-            new Mock<IStudyAreaWeekAssessmentRepository>();
-
-        var weeklyAssessmentRepository =
-            new Mock<IWeeklyAssessmentRepository>();
-
-        var studyRecordRepository =
-            new Mock<IStudyRecordRepository>();
-
-        var currentWeekProvider =
-            new Mock<ICurrentWeekProvider>();
-
-        var isoWeekCalendar =
-            new Mock<IIsoWeekCalendar>();
-
-        var clock =
-            new Mock<IClock>();
-
-        var unitOfWork =
-            new Mock<IUnitOfWork>();
+        var studyAreaWeekRepository = new Mock<IStudyAreaWeekRepository>();
+        var studyAreaWeekAssessmentRepository = new Mock<IStudyAreaWeekAssessmentRepository>();
+        var weeklyAssessmentRepository = new Mock<IWeeklyAssessmentRepository>();
+        var studyRecordRepository = new Mock<IStudyRecordRepository>();
+        var currentWeekProvider = new Mock<ICurrentWeekProvider>();
+        var isoWeekCalendar = new Mock<IIsoWeekCalendar>();
+        var clock = new Mock<IClock>();
+        var unitOfWork = new Mock<IUnitOfWork>();
 
         studyAreaWeekRepository
             .Setup(repository =>
