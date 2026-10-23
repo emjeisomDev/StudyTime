@@ -9,14 +9,14 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.WeeklyAssessments.Queries;
 
 public sealed class GetPreviousWeekSummaryHandler(
-    ICurrentWeekProvider currentWeekProvider,
+    IMapper mapper,
     IIsoWeekCalendar isoWeekCalendar,
-    IWeeklyAssessmentRepository weeklyAssessmentRepository,
-    IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
+    ICurrentWeekProvider currentWeekProvider,
     IStudyAreaRepository studyAreaRepository,
     IStudyPlanRepository studyPlanRepository,
-    IMapper mapper)
+    IStudyAreaWeekRepository studyAreaWeekRepository,
+    IWeeklyAssessmentRepository weeklyAssessmentRepository,
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
     : IRequestHandler<GetPreviousWeekSummaryQuery, PreviousWeekSummaryDto>
 {
     private const string IndividualAssessmentsContextKey = "IndividualAssessments";

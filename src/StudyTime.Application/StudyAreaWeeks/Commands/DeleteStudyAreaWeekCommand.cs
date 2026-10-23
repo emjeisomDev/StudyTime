@@ -3,5 +3,4 @@ using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyAreaWeeks.Commands;
 
-public sealed record DeleteStudyAreaWeekCommand(Guid Id)
-    : ICommand, IRequest<Unit>;
+public sealed record DeleteStudyAreaWeekCommand(Guid Id) : ICommand, IRequest<Unit>;

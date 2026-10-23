@@ -85,8 +85,7 @@ public sealed class DeleteLastStudyRecordHandler(
         if (weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
         {
             throw new DomainException(
-                @"The WeeklyAssessment associated with the StudyAreaWeek 
-                does not match its ISO week.");
+                @"The WeeklyAssessment associated with the StudyAreaWeek does not match its ISO week.");
         }
 
         var studyAreaWeekAssessment = await _studyAreaWeekAssessmentRepository
@@ -136,7 +135,7 @@ public sealed class DeleteLastStudyRecordHandler(
         var remainingRecords = await _studyRecordRepository
                 .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
 
-        var individualMinutesStudied = SumMinutes(remainingRecords);
+        var individualMinutesStudied = SumMinutes(remainingRecords.Where(record => record.Id != eligibleRecord.Id));
         studyAreaWeekAssessment.UpdateMinutesStudied(individualMinutesStudied);
         _studyAreaWeekAssessmentRepository.Update(studyAreaWeekAssessment);
 
@@ -177,7 +176,7 @@ public sealed class DeleteLastStudyRecordHandler(
         var confirmedIndividualMinutes = await _studyRecordRepository
                 .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
 
-        var confirmedIndividualTotal = SumMinutes(confirmedIndividualMinutes);
+        var confirmedIndividualTotal = SumMinutes(confirmedIndividualMinutes.Where(record => record.Id != eligibleRecord.Id));
 
         if (studyAreaWeekAssessment.MinutesStudied != confirmedIndividualTotal)
         {
@@ -191,7 +190,11 @@ public sealed class DeleteLastStudyRecordHandler(
             var records = await _studyRecordRepository
                     .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
 
-            confirmedGlobalMinutes = checked(confirmedGlobalMinutes + SumMinutes(records));
+            var configuredMinutes = SumMinutes(
+                configuredWeek.Id == studyAreaWeek.Id
+                    ? records.Where(record => record.Id != eligibleRecord.Id)
+                    : records);
+            confirmedGlobalMinutes = checked(confirmedGlobalMinutes + configuredMinutes);
         }
 
         if (weeklyAssessment.MinutesStudied != confirmedGlobalMinutes)

@@ -3,8 +3,7 @@ using StudyTime.Application.StudyRecords.Commands;
 
 namespace StudyTime.Application.Validators;
 
-public sealed class CreateStudyRecordCommandValidator
-    : AbstractValidator<CreateStudyRecordCommand>
+public sealed class CreateStudyRecordCommandValidator : AbstractValidator<CreateStudyRecordCommand>
 {
     public CreateStudyRecordCommandValidator()
     {

@@ -6,12 +6,12 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.WeeklyAssessments.Services;
 
 public sealed class WeeklyAssessmentSynchronizer(
-    IWeeklyAssessmentRepository weeklyAssessmentRepository,
-    IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
-    IStudyRecordRepository studyRecordRepository,
+    IUnitOfWork unitOfWork,
     IIsoWeekCalendar isoWeekCalendar,
-    IUnitOfWork unitOfWork)
+    IStudyRecordRepository studyRecordRepository,
+    IStudyAreaWeekRepository studyAreaWeekRepository,
+    IWeeklyAssessmentRepository weeklyAssessmentRepository,
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
     : IWeeklyAssessmentSynchronizer
 {
     private readonly IWeeklyAssessmentRepository _weeklyAssessmentRepository =

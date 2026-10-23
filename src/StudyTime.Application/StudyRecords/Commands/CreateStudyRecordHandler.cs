@@ -96,6 +96,8 @@ public sealed class CreateStudyRecordHandler(
             throw new DomainException("No StudyAreaWeek configuration was found for the current week.");
         }
 
+        var configuredAssessments = new List<StudyAreaWeekAssessment>(studyAreaWeeks.Count);
+        var individualGoals = new List<decimal>(studyAreaWeeks.Count);
         foreach (var configuredWeek in studyAreaWeeks)
         {
             if (configuredWeek.WeeklyAssessmentId != weeklyAssessment.Id)
@@ -103,23 +105,29 @@ public sealed class CreateStudyRecordHandler(
                 throw new DomainException(
                     "All StudyAreaWeeks in the same week must reference the same WeeklyAssessment.");
             }
+
+            var configuredAssessment = await _studyAreaWeekAssessmentRepository
+                .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
+            if (configuredAssessment is null || configuredAssessment.StudyAreaWeekId != configuredWeek.Id)
+            {
+                throw new DomainException(
+                    $"StudyAreaWeekAssessment is missing or mismatched for StudyAreaWeek '{configuredWeek.Id}'.");
+            }
+
+            configuredAssessments.Add(configuredAssessment);
+            individualGoals.Add(configuredAssessment.WeekIndividualGoal);
         }
 
-        WeeklyGoalValidator.Validate(weeklyAssessment.WeekGlobalGoal);
-
-        var individualAssessment = await _studyAreaWeekAssessmentRepository
-                .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
-
-        if (individualAssessment is null)
+        var calculatedGlobalGoal = GoalCalculator.CalculateGlobalGoal(individualGoals);
+        WeeklyGoalValidator.Validate(calculatedGlobalGoal);
+        if (calculatedGlobalGoal != weeklyAssessment.WeekGlobalGoal)
         {
             throw new DomainException(
-                $"StudyAreaWeekAssessment was not found for StudyAreaWeek '{studyAreaWeek.Id}'.");
+                "The WeeklyAssessment global goal is inconsistent with the individual goals of its configured week.");
         }
 
-        if (individualAssessment.StudyAreaWeekId != studyAreaWeek.Id)
-        {
-            throw new DomainException("The StudyAreaWeekAssessment does not belong to the requested StudyAreaWeek.");
-        }
+        var individualAssessment = configuredAssessments.Single(
+            assessment => assessment.StudyAreaWeekId == studyAreaWeek.Id);
 
         var recordDate = GetCurrentLocalDate();
 

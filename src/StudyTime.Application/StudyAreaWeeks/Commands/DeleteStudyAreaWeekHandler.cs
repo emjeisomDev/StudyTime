@@ -7,13 +7,14 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.StudyAreaWeeks.Commands;
 
 public sealed class DeleteStudyAreaWeekHandler(
-    IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
-    IStudyRecordRepository studyRecordRepository,
-    IWeeklyAssessmentRepository weeklyAssessmentRepository,
-    ICurrentWeekProvider currentWeekProvider,
+    IUnitOfWork unitOfWork,
     IIsoWeekCalendar isoWeekCalendar,
-    IUnitOfWork unitOfWork)
+    ICurrentWeekProvider currentWeekProvider,
+    IStudyRecordRepository studyRecordRepository,
+    IStudyAreaWeekRepository studyAreaWeekRepository,
+    IWeeklyAssessmentRepository weeklyAssessmentRepository,
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository
+    )
     : IRequestHandler<DeleteStudyAreaWeekCommand, Unit>
 {
     private readonly IStudyAreaWeekRepository _studyAreaWeekRepository =
@@ -76,7 +77,7 @@ public sealed class DeleteStudyAreaWeekHandler(
             weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
         {
             throw new DomainException(@"The weekly assessment associated with the 
-                                        configuration does not match its ISO week.");
+											configuration does not match its ISO week.");
         }
 
         await ValidateWeekLockAsync(cancellationToken);
@@ -166,21 +167,46 @@ public sealed class DeleteStudyAreaWeekHandler(
 
     private async Task ValidateWeekLockAsync(CancellationToken cancellationToken)
     {
-        var currentWeek = _currentWeekProvider.GetCurrentWeek();
-        var currentWeekStart = DateOnly.FromDateTime(currentWeek.Start);
-
-        var currentIsoWeek = _isoWeekCalendar.GetIsoWeek(currentWeekStart);
-
+        var currentWeekStart = DateOnly.FromDateTime(_currentWeekProvider.GetCurrentWeek().Start);
+        var isoWeek = _isoWeekCalendar.GetIsoWeek(currentWeekStart);
         var currentAssessment = await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
-                currentIsoWeek.Year,
-                currentIsoWeek.WeekNumber,
-                cancellationToken);
+            isoWeek.Year, isoWeek.WeekNumber, cancellationToken);
 
-        if (currentAssessment is null || currentAssessment.MinutesStudied < currentAssessment.WeekGlobalGoal)
+        if (currentAssessment is null)
         {
             throw new WeekConfigurationLockedException(
-                @"Weekly configuration can only be changed after the 
-                current week's global goal has been reached.");
+                "The current week is not configured or its goal has not been achieved.");
+        }
+
+        var configuredWeeks = await _studyAreaWeekRepository.GetByWeekStartDateAsync(
+            currentWeekStart, cancellationToken);
+        if (configuredWeeks.Count == 0)
+        {
+            throw new WeekConfigurationLockedException(
+                "The current week is not configured or its goal has not been achieved.");
+        }
+
+        foreach (var configuredWeek in configuredWeeks)
+        {
+            if (configuredWeek.WeeklyAssessmentId != currentAssessment.Id)
+            {
+                throw new DomainException(
+                    "All StudyAreaWeeks in the current week must reference its WeeklyAssessment.");
+            }
+
+            var individualAssessment = await _studyAreaWeekAssessmentRepository
+                .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
+            if (individualAssessment is null)
+            {
+                throw new DomainException(
+                    $"StudyAreaWeekAssessment was not found for StudyAreaWeek '{configuredWeek.Id}'.");
+            }
+
+            if (!GoalAchievedEvaluator.EvaluateIndividual(individualAssessment))
+            {
+                throw new WeekConfigurationLockedException(
+                    "Weekly configuration can only be changed after every individual goal in the current week has been reached.");
+            }
         }
     }
 }

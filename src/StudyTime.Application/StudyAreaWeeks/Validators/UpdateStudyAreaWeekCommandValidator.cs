@@ -3,8 +3,7 @@ using StudyTime.Application.StudyAreaWeeks.Commands;
 
 namespace StudyTime.Application.Validators;
 
-public sealed class UpdateStudyAreaWeekCommandValidator
-    : AbstractValidator<UpdateStudyAreaWeekCommand>
+public sealed class UpdateStudyAreaWeekCommandValidator : AbstractValidator<UpdateStudyAreaWeekCommand>
 {
     public UpdateStudyAreaWeekCommandValidator()
     {

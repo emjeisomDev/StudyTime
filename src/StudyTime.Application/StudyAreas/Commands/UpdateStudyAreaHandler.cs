@@ -7,10 +7,7 @@ using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyAreas.Commands;
 
-public sealed class UpdateStudyAreaHandler(
-    IStudyAreaRepository studyAreaRepository,
-    IUnitOfWork unitOfWork)
-    : ICommandHandler<UpdateStudyAreaCommand, StudyAreaDto>
+public sealed class UpdateStudyAreaHandler(IStudyAreaRepository studyAreaRepository, IUnitOfWork unitOfWork) : ICommandHandler<UpdateStudyAreaCommand, StudyAreaDto>
 {
     private readonly IStudyAreaRepository _studyAreaRepository = studyAreaRepository ?? throw new ArgumentNullException(nameof(studyAreaRepository));
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));

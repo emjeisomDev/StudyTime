@@ -1,4 +1,3 @@
-using MediatR;
 using StudyTime.Domain.Enums;
 using StudyTime.Domain.Entities;
 using StudyTime.Domain.Services;
@@ -6,19 +5,20 @@ using StudyTime.Application.Dtos;
 using StudyTime.Domain.Exceptions;
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.Abstractions.Repositories;
+using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyAreaWeeks.Commands;
 
 public sealed class CreateStudyAreaWeekHandler(
+    IUnitOfWork unitOfWork,
+    IIsoWeekCalendar isoWeekCalendar,
     IStudyAreaRepository studyAreaRepository,
     IStudyPlanRepository studyPlanRepository,
-    IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
-    IWeeklyAssessmentRepository weeklyAssessmentRepository,
     ICurrentWeekProvider currentWeekProvider,
-    IIsoWeekCalendar isoWeekCalendar,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateStudyAreaWeekCommand, StudyAreaWeekDto>
+    IStudyAreaWeekRepository studyAreaWeekRepository,
+    IWeeklyAssessmentRepository weeklyAssessmentRepository,
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
+    : ICommandHandler<CreateStudyAreaWeekCommand, StudyAreaWeekDto>
 {
     private readonly IStudyAreaRepository _studyAreaRepository =
         studyAreaRepository ?? throw new ArgumentNullException(
@@ -117,9 +117,9 @@ public sealed class CreateStudyAreaWeekHandler(
                 cancellationToken);
 
         var individualGoals = new List<decimal>(existingStudyAreaWeeks.Count + 1)
-        {
-            individualGoal
-        };
+            {
+                individualGoal
+            };
 
         foreach (var existingStudyAreaWeek in existingStudyAreaWeeks)
         {
@@ -197,20 +197,46 @@ public sealed class CreateStudyAreaWeekHandler(
 
     private async Task ValidateWeekLockAsync(CancellationToken cancellationToken)
     {
-        var currentWeek = _currentWeekProvider.GetCurrentWeek();
-        var currentWeekStart = DateOnly.FromDateTime(currentWeek.Start);
+        var currentWeekStart = DateOnly.FromDateTime(_currentWeekProvider.GetCurrentWeek().Start);
         var isoWeek = _isoWeekCalendar.GetIsoWeek(currentWeekStart);
-
         var currentAssessment = await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
-                isoWeek.Year,
-                isoWeek.WeekNumber,
-                cancellationToken);
+            isoWeek.Year, isoWeek.WeekNumber, cancellationToken);
 
-        if (currentAssessment is not null && currentAssessment.MinutesStudied < currentAssessment.WeekGlobalGoal)
+        if (currentAssessment is null)
         {
             throw new WeekConfigurationLockedException(
-                "Weekly configuration can only be changed after the " +
-                "current week's global goal has been reached.");
+                "The current week is not configured or its goal has not been achieved.");
+        }
+
+        var configuredWeeks = await _studyAreaWeekRepository.GetByWeekStartDateAsync(
+            currentWeekStart, cancellationToken);
+        if (configuredWeeks.Count == 0)
+        {
+            throw new WeekConfigurationLockedException(
+                "The current week is not configured or its goal has not been achieved.");
+        }
+
+        foreach (var configuredWeek in configuredWeeks)
+        {
+            if (configuredWeek.WeeklyAssessmentId != currentAssessment.Id)
+            {
+                throw new DomainException(
+                    "All StudyAreaWeeks in the current week must reference its WeeklyAssessment.");
+            }
+
+            var individualAssessment = await _studyAreaWeekAssessmentRepository
+                .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
+            if (individualAssessment is null)
+            {
+                throw new DomainException(
+                    $"StudyAreaWeekAssessment was not found for StudyAreaWeek '{configuredWeek.Id}'.");
+            }
+
+            if (!GoalAchievedEvaluator.EvaluateIndividual(individualAssessment))
+            {
+                throw new WeekConfigurationLockedException(
+                    "Weekly configuration can only be changed after every individual goal in the current week has been reached.");
+            }
         }
     }
 }

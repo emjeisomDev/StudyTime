@@ -7,10 +7,7 @@ using StudyTime.Domain.Abstractions.Repositories;
 
 namespace StudyTime.Application.StudyPlans.Commands;
 
-public sealed class CreateStudyPlanHandler(
-    IStudyPlanRepository studyPlanRepository,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateStudyPlanCommand, StudyPlanDto>
+public sealed class CreateStudyPlanHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork) : IRequestHandler<CreateStudyPlanCommand, StudyPlanDto>
 {
     private readonly IStudyPlanRepository _studyPlanRepository =
         studyPlanRepository ?? throw new ArgumentNullException(

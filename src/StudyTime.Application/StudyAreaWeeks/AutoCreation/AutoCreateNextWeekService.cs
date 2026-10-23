@@ -1,3 +1,4 @@
+using StudyTime.Domain.Enums;
 using StudyTime.Domain.Entities;
 using StudyTime.Domain.Services;
 using StudyTime.Domain.Exceptions;
@@ -7,14 +8,15 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.StudyAreaWeeks.AutoCreation;
 
 public sealed class AutoCreateNextWeekService(
+    IClock clock,
+    IUnitOfWork unitOfWork,
+    IIsoWeekCalendar isoWeekCalendar,
+    ICurrentWeekProvider currentWeekProvider,
     IStudyAreaRepository studyAreaRepository,
     IStudyPlanRepository studyPlanRepository,
     IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
     IWeeklyAssessmentRepository weeklyAssessmentRepository,
-    ICurrentWeekProvider currentWeekProvider,
-    IIsoWeekCalendar isoWeekCalendar,
-    IUnitOfWork unitOfWork)
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
     : IAutoCreateNextWeekService
 {
     private readonly IStudyAreaRepository _studyAreaRepository =
@@ -46,6 +48,7 @@ public sealed class AutoCreateNextWeekService(
     private readonly IIsoWeekCalendar _isoWeekCalendar =
         isoWeekCalendar
         ?? throw new ArgumentNullException(nameof(isoWeekCalendar));
+    private readonly IClock _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
     private readonly IUnitOfWork _unitOfWork =
         unitOfWork
@@ -57,6 +60,15 @@ public sealed class AutoCreateNextWeekService(
 
         try
         {
+            var utcNow = DateTime.SpecifyKind(_clock.UtcNow, DateTimeKind.Utc);
+            var officialTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
+            var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, officialTimeZone);
+            if (localNow.DayOfWeek != DayOfWeek.Sunday)
+            {
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+                return;
+            }
+
             var currentWeek = _currentWeekProvider.GetCurrentWeek();
             var currentWeekStart =
                 DateOnly.FromDateTime(currentWeek.Start);
@@ -126,6 +138,11 @@ public sealed class AutoCreateNextWeekService(
                     throw new KeyNotFoundException(
                         $"StudyPlan '{currentStudyAreaWeek.StudyPlanId}' " +
                         "was not found.");
+                }
+                if (studyPlan.Status != StudyPlanStatus.Active)
+                {
+                    throw new DomainException(
+                        $"Inactive StudyPlan '{studyPlan.Id}' cannot be copied into a new week.");
                 }
 
                 var individualGoal =

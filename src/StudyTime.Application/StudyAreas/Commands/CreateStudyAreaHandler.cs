@@ -8,9 +8,8 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.StudyAreas.Commands;
 
 public sealed class CreateStudyAreaHandler(
-    IStudyAreaRepository studyAreaRepository,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateStudyAreaCommand, StudyAreaDto>
+    IStudyAreaRepository studyAreaRepository, 
+    IUnitOfWork unitOfWork) : IRequestHandler<CreateStudyAreaCommand, StudyAreaDto>
 {
     private readonly IStudyAreaRepository _studyAreaRepository = studyAreaRepository ?? throw new ArgumentNullException(nameof(studyAreaRepository));
 

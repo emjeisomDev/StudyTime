@@ -4,8 +4,7 @@ using StudyTime.Domain.Abstractions.Repositories;
 
 namespace StudyTime.Application.StudyPlans.Queries;
 
-public sealed class GetStudyPlanByIdHandler(IStudyPlanRepository studyPlanRepository)
-    : IRequestHandler<GetStudyPlanByIdQuery, StudyPlanDto?>
+public sealed class GetStudyPlanByIdHandler(IStudyPlanRepository studyPlanRepository) : IRequestHandler<GetStudyPlanByIdQuery, StudyPlanDto?>
 {
     private readonly IStudyPlanRepository _studyPlanRepository =
         studyPlanRepository ?? throw new ArgumentNullException(

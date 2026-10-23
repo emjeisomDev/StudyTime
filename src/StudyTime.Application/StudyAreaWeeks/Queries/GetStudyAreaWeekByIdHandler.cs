@@ -8,10 +8,10 @@ using StudyTime.Domain.Abstractions.Repositories;
 namespace StudyTime.Application.StudyAreaWeeks.Queries;
 
 public sealed class GetStudyAreaWeekByIdHandler(
+    IIsoWeekCalendar isoWeekCalendar,
     IStudyAreaWeekRepository studyAreaWeekRepository,
-    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository,
     IWeeklyAssessmentRepository weeklyAssessmentRepository,
-    IIsoWeekCalendar isoWeekCalendar)
+    IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
     : IRequestHandler<GetStudyAreaWeekByIdQuery, StudyAreaWeekDto>
 {
     private readonly IStudyAreaWeekRepository _studyAreaWeekRepository =
@@ -66,8 +66,7 @@ public sealed class GetStudyAreaWeekByIdHandler(
         if (individualAssessment.StudyAreaWeekId != studyAreaWeek.Id)
         {
             throw new DomainException(
-                @"The individual assessment does not 
-                belong to the requested StudyAreaWeek.");
+                @"The individual assessment does not belong to the requested StudyAreaWeek.");
         }
 
         var isoWeek = _isoWeekCalendar.GetIsoWeek(studyAreaWeek.WeekStartDate);
@@ -77,8 +76,7 @@ public sealed class GetStudyAreaWeekByIdHandler(
         if (weeklyAssessment is null || weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
         {
             throw new DomainException(
-                @"The weekly assessment associated with the 
-                configuration does not match its ISO week.");
+                @"The weekly assessment associated with the configuration does not match its ISO week.");
         }
 
         return new StudyAreaWeekDto(

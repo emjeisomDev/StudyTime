@@ -3,8 +3,7 @@ using StudyTime.Application.StudyAreas.Commands;
 
 namespace StudyTime.Application.Validators;
 
-public sealed class CreateStudyAreaCommandValidator
-    : AbstractValidator<CreateStudyAreaCommand>
+public sealed class CreateStudyAreaCommandValidator : AbstractValidator<CreateStudyAreaCommand>
 {
     public CreateStudyAreaCommandValidator()
     {
@@ -16,7 +15,6 @@ public sealed class CreateStudyAreaCommandValidator
 
         RuleFor(command => command.StdWeekStudyTime)
             .GreaterThan(0)
-            .WithMessage(
-                "Standard weekly study time must be greater than zero.");
+            .WithMessage("Standard weekly study time must be greater than zero.");
     }
 }

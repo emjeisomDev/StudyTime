@@ -4,20 +4,17 @@ using StudyTime.Domain.Abstractions;
 
 namespace StudyTime.Application.Behaviors;
 
-public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfWork)
-    : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfWork) : 
+    IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
-    public async Task<TResponse> Handle(
-        TRequest request,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken cancellationToken)
+    public async Task<TResponse> Handle
+        (TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         if (request is not ICommand)
         {
-            return await next();
+            return await next(cancellationToken);
         }
 
         await _unitOfWork.BeginTransactionAsync(cancellationToken);
@@ -25,14 +22,21 @@ public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfW
         try
         {
             var response = await next();
-
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
-
             return response;
         }
         catch
         {
-            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            try
+            {
+                await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // Preserve the original failure; rollback failures are logged by infrastructure.
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                throw;
+            }
             throw;
         }
     }

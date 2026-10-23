@@ -3,8 +3,7 @@ using StudyTime.Application.Dtos;
 
 namespace StudyTime.Application.Validators;
 
-public sealed class CreateStudyAreaWeeksBatchCommandValidator
-    : AbstractValidator<IReadOnlyCollection<StudyAreaWeekBatchItemDto>>
+public sealed class CreateStudyAreaWeeksBatchCommandValidator : AbstractValidator<IReadOnlyCollection<StudyAreaWeekBatchItemDto>>
 {
     public CreateStudyAreaWeeksBatchCommandValidator()
     {

@@ -4,10 +4,7 @@ using StudyTime.Domain.Abstractions.Repositories;
 
 namespace StudyTime.Application.StudyPlans.Commands;
 
-public sealed class UpdateStudyPlanStatusHandler(
-    IStudyPlanRepository studyPlanRepository,
-    IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateStudyPlanStatusCommand>
+public sealed class UpdateStudyPlanStatusHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork) : IRequestHandler<UpdateStudyPlanStatusCommand>
 {
     private readonly IStudyPlanRepository _studyPlanRepository =
         studyPlanRepository ?? throw new ArgumentNullException(

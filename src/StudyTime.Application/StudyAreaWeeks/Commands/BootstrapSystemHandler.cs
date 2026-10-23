@@ -1,11 +1,11 @@
-using MediatR;
+using StudyTime.Domain.Enums;
+using StudyTime.Domain.Entities;
+using StudyTime.Domain.Services;
 using StudyTime.Application.Dtos;
+using StudyTime.Domain.Exceptions;
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.Abstractions.Repositories;
-using StudyTime.Domain.Entities;
-using StudyTime.Domain.Enums;
-using StudyTime.Domain.Exceptions;
-using StudyTime.Domain.Services;
+using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyAreaWeeks.Commands;
 
@@ -18,7 +18,7 @@ public sealed class BootstrapSystemHandler(
     ICurrentWeekProvider currentWeekProvider,
     IIsoWeekCalendar isoWeekCalendar,
     IUnitOfWork unitOfWork)
-    : IRequestHandler<BootstrapSystemCommand, IReadOnlyList<StudyAreaWeekDto>>
+    : ICommandHandler<BootstrapSystemCommand, IReadOnlyList<StudyAreaWeekDto>>
 {
     private readonly IStudyAreaRepository _studyAreaRepository =
         studyAreaRepository ?? throw new ArgumentNullException(

@@ -3,8 +3,7 @@ using StudyTime.Application.StudyPlans.Commands;
 
 namespace StudyTime.Application.Validators;
 
-public sealed class CreateStudyPlanCommandValidator
-    : AbstractValidator<CreateStudyPlanCommand>
+public sealed class CreateStudyPlanCommandValidator : AbstractValidator<CreateStudyPlanCommand>
 {
     public CreateStudyPlanCommandValidator()
     {
