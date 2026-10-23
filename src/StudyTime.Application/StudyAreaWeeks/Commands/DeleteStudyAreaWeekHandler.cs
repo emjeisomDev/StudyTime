@@ -65,6 +65,16 @@ public sealed class DeleteStudyAreaWeekHandler(
             throw new KeyNotFoundException($"StudyAreaWeek '{request.Id}' was not found.");
         }
 
+        var currentWeekStart = DateOnly.FromDateTime(_currentWeekProvider.GetCurrentWeek().Start);
+        var lastAllowedWeekStart = currentWeekStart.AddDays(28);
+        if (studyAreaWeek.WeekStartDate.DayOfWeek != DayOfWeek.Monday ||
+            studyAreaWeek.WeekStartDate < currentWeekStart ||
+            studyAreaWeek.WeekStartDate > lastAllowedWeekStart)
+        {
+            throw new DomainException(
+                "Only the current week and the four following weeks can be changed manually.");
+        }
+
         var isoWeek = _isoWeekCalendar.GetIsoWeek(studyAreaWeek.WeekStartDate);
 
         var weeklyAssessment =
@@ -77,7 +87,7 @@ public sealed class DeleteStudyAreaWeekHandler(
             weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
         {
             throw new DomainException(@"The weekly assessment associated with the 
-											configuration does not match its ISO week.");
+												configuration does not match its ISO week.");
         }
 
         await ValidateWeekLockAsync(cancellationToken);

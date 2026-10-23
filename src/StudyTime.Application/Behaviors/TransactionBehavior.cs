@@ -4,7 +4,7 @@ using StudyTime.Domain.Abstractions;
 
 namespace StudyTime.Application.Behaviors;
 
-public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfWork) : 
+public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfWork) :
     IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
@@ -21,7 +21,7 @@ public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfW
 
         try
         {
-            var response = await next();
+            var response = await next(cancellationToken);
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
             return response;
         }
@@ -33,7 +33,7 @@ public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfW
             }
             catch
             {
-                // Preserve the original failure; rollback failures are logged by infrastructure.
+                // Do not replace the original application/database exception with a rollback failure.
                 await _unitOfWork.RollbackTransactionAsync(cancellationToken);
                 throw;
             }

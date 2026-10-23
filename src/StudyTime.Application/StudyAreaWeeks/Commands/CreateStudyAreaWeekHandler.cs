@@ -149,6 +149,22 @@ public sealed class CreateStudyAreaWeekHandler(
                 isoWeek.WeekNumber,
                 cancellationToken);
 
+        if (existingStudyAreaWeeks.Count > 0 && weeklyAssessment is null)
+        {
+            throw new DomainException("Configured StudyAreaWeeks exist but their WeeklyAssessment is missing.");
+        }
+
+        if (weeklyAssessment is not null &&
+            existingStudyAreaWeeks.Any(item => item.WeeklyAssessmentId != weeklyAssessment.Id))
+        {
+            throw new DomainException("All StudyAreaWeeks in the same week must reference the same WeeklyAssessment.");
+        }
+
+        if (existingStudyAreaWeeks.Count == 0 && weeklyAssessment is not null)
+        {
+            throw new DomainException("A WeeklyAssessment exists for a week without StudyAreaWeek configurations.");
+        }
+
         if (weeklyAssessment is null)
         {
             weeklyAssessment = new WeeklyAssessment(isoWeek.WeekNumber, isoWeek.Year, globalGoal);

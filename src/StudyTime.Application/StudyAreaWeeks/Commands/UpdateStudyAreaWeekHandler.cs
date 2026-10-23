@@ -55,28 +55,80 @@ public sealed class UpdateStudyAreaWeekHandler(
         ValidateIdentifiers(request);
 
         var studyAreaWeek = await _studyAreaWeekRepository.GetByIdAsync(request.Id, cancellationToken);
-
         if (studyAreaWeek is null)
         {
             throw new KeyNotFoundException($"StudyAreaWeek '{request.Id}' was not found.");
         }
 
+        var currentWeekStart = DateOnly.FromDateTime(_currentWeekProvider.GetCurrentWeek().Start);
+        var lastAllowedWeekStart = currentWeekStart.AddDays(28);
+        if (studyAreaWeek.WeekStartDate.DayOfWeek != DayOfWeek.Monday ||
+            studyAreaWeek.WeekStartDate < currentWeekStart ||
+            studyAreaWeek.WeekStartDate > lastAllowedWeekStart)
+        {
+            throw new DomainException("Only the current week and the four following weeks can be changed manually.");
+        }
+
         await ValidateWeekLockAsync(cancellationToken);
 
-        var studyArea = await _studyAreaRepository.GetByIdAsync(request.StudyAreaId, cancellationToken);
+        var allStudyAreaWeeks = await _studyAreaWeekRepository.GetByWeekStartDateAsync(
+            studyAreaWeek.WeekStartDate,
+            cancellationToken);
+        if (!allStudyAreaWeeks.Any(item => item.Id == studyAreaWeek.Id))
+        {
+            throw new DomainException("The StudyAreaWeek does not belong to its configured week.");
+        }
 
+        if (allStudyAreaWeeks.Any(item => item.WeeklyAssessmentId != studyAreaWeek.WeeklyAssessmentId))
+        {
+            throw new DomainException("All StudyAreaWeeks in the same week must reference the same WeeklyAssessment.");
+        }
+
+        var isoWeek = _isoWeekCalendar.GetIsoWeek(studyAreaWeek.WeekStartDate);
+        var weeklyAssessment = await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
+            isoWeek.Year,
+            isoWeek.WeekNumber,
+            cancellationToken);
+        if (weeklyAssessment is null || weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
+        {
+            throw new DomainException("The weekly assessment associated with the configuration does not match its ISO week.");
+        }
+
+        var assessment = await _studyAreaWeekAssessmentRepository.GetByStudyAreaWeekIdAsync(
+            studyAreaWeek.Id,
+            cancellationToken);
+        if (assessment is null || assessment.StudyAreaWeekId != studyAreaWeek.Id)
+        {
+            throw new DomainException($"StudyAreaWeekAssessment is missing or mismatched for StudyAreaWeek '{studyAreaWeek.Id}'.");
+        }
+
+        // A PUT with unchanged foreign keys is a no-op. It must not recalculate a historical
+        // goal because StudyArea.std_week_study_time or StudyPlan.coefficient changed later.
+        if (studyAreaWeek.StudyAreaId == request.StudyAreaId &&
+            studyAreaWeek.StudyPlanId == request.StudyPlanId)
+        {
+            return new StudyAreaWeekDto(
+                studyAreaWeek.Id,
+                studyAreaWeek.WeekStartDate,
+                studyAreaWeek.StudyAreaId,
+                studyAreaWeek.StudyPlanId,
+                studyAreaWeek.WeeklyAssessmentId,
+                assessment.WeekIndividualGoal,
+                assessment.MinutesStudied,
+                GoalAchievedEvaluator.EvaluateIndividual(assessment));
+        }
+
+        var studyArea = await _studyAreaRepository.GetByIdAsync(request.StudyAreaId, cancellationToken);
         if (studyArea is null)
         {
             throw new KeyNotFoundException($"StudyArea '{request.StudyAreaId}' was not found.");
         }
 
         var studyPlan = await _studyPlanRepository.GetByIdAsync(request.StudyPlanId, cancellationToken);
-
         if (studyPlan is null)
         {
             throw new KeyNotFoundException($"StudyPlan '{request.StudyPlanId}' was not found.");
         }
-
         if (studyPlan.Status != StudyPlanStatus.Active)
         {
             throw new DomainException($"StudyPlan '{request.StudyPlanId}' is inactive.");
@@ -89,76 +141,45 @@ public sealed class UpdateStudyAreaWeekHandler(
             && studyAreaWeek.StudyAreaId != request.StudyAreaId)
         {
             throw new DuplicateStudyAreaWeekException(
-                $"StudyArea '{request.StudyAreaId}' is already configured " +
-                $"for week '{studyAreaWeek.WeekStartDate:yyyy-MM-dd}'.");
+                $"StudyArea '{request.StudyAreaId}' is already configured for week '{studyAreaWeek.WeekStartDate:yyyy-MM-dd}'.");
         }
 
-        var assessment = await _studyAreaWeekAssessmentRepository
-            .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
-
-        if (assessment is null)
-        {
-            throw new DomainException(
-                $"StudyAreaWeekAssessment was not found for " +
-                $"StudyAreaWeek '{studyAreaWeek.Id}'.");
-        }
-
-        var records = await _studyRecordRepository
-            .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
-
-        var individualGoal = GoalCalculator
-            .CalculateIndividualGoal(studyArea.StdWeekStudyTime.Value, studyPlan.Coefficient.Value);
-
-        var allStudyAreaWeeks =
-            await _studyAreaWeekRepository
-                .GetByWeekStartDateAsync(studyAreaWeek.WeekStartDate, cancellationToken);
+        var individualGoal = GoalCalculator.CalculateIndividualGoal(
+            studyArea.StdWeekStudyTime.Value,
+            studyPlan.Coefficient.Value);
 
         var individualGoals = new List<decimal>(allStudyAreaWeeks.Count);
-        var minutesStudied = records.Sum(record => record.Minutes.Value);
-        var totalMinutesStudied = minutesStudied;
+        var totalMinutesStudied = 0;
 
-        foreach (var currentWeek in allStudyAreaWeeks)
+        foreach (var configuredWeek in allStudyAreaWeeks)
         {
-            if (currentWeek.Id == studyAreaWeek.Id)
-            {
-                individualGoals.Add(individualGoal);
-                continue;
-            }
-
-            var currentAssessment =
-                await _studyAreaWeekAssessmentRepository.GetByStudyAreaWeekIdAsync(
-                    currentWeek.Id,
+            var configuredAssessment = configuredWeek.Id == studyAreaWeek.Id
+                ? assessment
+                : await _studyAreaWeekAssessmentRepository.GetByStudyAreaWeekIdAsync(
+                    configuredWeek.Id,
                     cancellationToken);
 
-            if (currentAssessment is null)
+            if (configuredAssessment is null || configuredAssessment.StudyAreaWeekId != configuredWeek.Id)
             {
                 throw new DomainException(
-                    $"StudyAreaWeekAssessment was not found for " +
-                    $"StudyAreaWeek '{currentWeek.Id}'.");
+                    $"StudyAreaWeekAssessment is missing or mismatched for StudyAreaWeek '{configuredWeek.Id}'.");
             }
 
-            individualGoals.Add(currentAssessment.WeekIndividualGoal);
-            totalMinutesStudied = checked(totalMinutesStudied + currentAssessment.MinutesStudied);
+            var records = await _studyRecordRepository.GetByStudyAreaWeekIdAsync(
+                configuredWeek.Id,
+                cancellationToken);
+            var actualMinutes = records.Sum(record => record.Minutes.Value);
+            configuredAssessment.UpdateMinutesStudied(actualMinutes);
+            _studyAreaWeekAssessmentRepository.Update(configuredAssessment);
+            totalMinutesStudied = checked(totalMinutesStudied + actualMinutes);
+
+            individualGoals.Add(configuredWeek.Id == studyAreaWeek.Id
+                ? individualGoal
+                : configuredAssessment.WeekIndividualGoal);
         }
 
         var globalGoal = GoalCalculator.CalculateGlobalGoal(individualGoals);
         WeeklyGoalValidator.Validate(globalGoal);
-
-        var isoWeek = _isoWeekCalendar.GetIsoWeek(studyAreaWeek.WeekStartDate);
-
-        var weeklyAssessment =
-            await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
-                isoWeek.Year,
-                isoWeek.WeekNumber,
-                cancellationToken);
-
-        if (weeklyAssessment is null ||
-            weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
-        {
-            throw new DomainException(
-                "The weekly assessment associated with the configuration " +
-                "does not match its ISO week.");
-        }
 
         var updatedStudyAreaWeek = new StudyAreaWeek(
             studyAreaWeek.Id,
@@ -168,14 +189,13 @@ public sealed class UpdateStudyAreaWeekHandler(
             studyAreaWeek.WeeklyAssessmentId);
 
         assessment.UpdateIndividualGoal(individualGoal);
-        assessment.UpdateMinutesStudied(minutesStudied);
+        // The target assessment was already recalculated from persisted records in the loop.
         weeklyAssessment.UpdateGlobalGoal(globalGoal);
         weeklyAssessment.UpdateMinutesStudied(totalMinutesStudied);
 
         _studyAreaWeekRepository.Update(updatedStudyAreaWeek);
         _studyAreaWeekAssessmentRepository.Update(assessment);
         _weeklyAssessmentRepository.Update(weeklyAssessment);
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new StudyAreaWeekDto(

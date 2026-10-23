@@ -107,6 +107,18 @@ public sealed class AutoCreateNextWeekService(
                 return;
             }
 
+            var currentIsoWeek = _isoWeekCalendar.GetIsoWeek(currentWeekStart);
+            var currentWeeklyAssessment = await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
+                currentIsoWeek.Year,
+                currentIsoWeek.WeekNumber,
+                cancellationToken);
+            if (currentWeeklyAssessment is null ||
+                currentWeekStudyAreaWeeks.Any(item => item.WeeklyAssessmentId != currentWeeklyAssessment.Id))
+            {
+                throw new DomainException(
+                    "All StudyAreaWeeks in the current week must reference its ISO WeeklyAssessment.");
+            }
+
             var nextIsoWeek =
                 _isoWeekCalendar.GetIsoWeek(nextWeekStart);
 
@@ -169,34 +181,20 @@ public sealed class AutoCreateNextWeekService(
                         nextIsoWeek.WeekNumber,
                         cancellationToken);
 
-            if (weeklyAssessment is null)
+            if (weeklyAssessment is not null)
             {
-                weeklyAssessment = new WeeklyAssessment(
-                    nextIsoWeek.WeekNumber,
-                    nextIsoWeek.Year,
-                    globalGoal);
-
-                await _weeklyAssessmentRepository.AddAsync(
-                    weeklyAssessment,
-                    cancellationToken);
+                throw new DomainException(
+                    "A WeeklyAssessment exists for the next week without StudyAreaWeek configurations.");
             }
-            else
-            {
-                if (weeklyAssessment.WeekNumber !=
-                        nextIsoWeek.WeekNumber ||
-                    weeklyAssessment.Year != nextIsoWeek.Year)
-                {
-                    throw new DomainException(
-                        "The WeeklyAssessment does not match the " +
-                        "ISO week being created.");
-                }
 
-                weeklyAssessment.UpdateGlobalGoal(globalGoal);
-                weeklyAssessment.UpdateMinutesStudied(0);
+            weeklyAssessment = new WeeklyAssessment(
+                nextIsoWeek.WeekNumber,
+                nextIsoWeek.Year,
+                globalGoal);
 
-                _weeklyAssessmentRepository.Update(
-                    weeklyAssessment);
-            }
+            await _weeklyAssessmentRepository.AddAsync(
+                weeklyAssessment,
+                cancellationToken);
 
             foreach (var item in preparedItems)
             {
@@ -225,8 +223,14 @@ public sealed class AutoCreateNextWeekService(
         }
         catch
         {
-            await _unitOfWork.RollbackTransactionAsync(
-                cancellationToken);
+            try
+            {
+                await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // Preserve the rollover failure if rollback also fails.
+            }
 
             throw;
         }
