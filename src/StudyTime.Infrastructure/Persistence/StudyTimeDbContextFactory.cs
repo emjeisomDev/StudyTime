@@ -8,13 +8,17 @@ public sealed class StudyTimeDbContextFactory : IDesignTimeDbContextFactory<Stud
     public StudyTimeDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<StudyTimeDbContext>();
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            connectionString = @"Host=localhost;
+                                Port=5432;
+                                Database=studytime
+                                Username=studytime;
+                                Password=studytime_dev";
+        }
 
-        optionsBuilder.UseNpgsql(@"Host=localhost;
-                                    Port=5432;
-                                    Database=studytime;
-                                    Username=studytime;
-                                    Password=studytime_dev");
-
+        optionsBuilder.UseNpgsql(connectionString);
         return new StudyTimeDbContext(optionsBuilder.Options);
     }
 }

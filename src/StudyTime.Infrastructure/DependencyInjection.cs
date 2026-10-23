@@ -4,6 +4,7 @@ using StudyTime.Infrastructure.Time;
 using StudyTime.Infrastructure.Calendar;
 using Microsoft.Extensions.Configuration;
 using StudyTime.Infrastructure.Persistence;
+using StudyTime.Infrastructure.BackgroundJobs;
 using Microsoft.Extensions.DependencyInjection;
 using StudyTime.Domain.Abstractions.Repositories;
 using StudyTime.Infrastructure.Persistence.Repositories;
@@ -13,40 +14,20 @@ namespace StudyTime.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure
+        (this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var connectionString = configuration["ConnectionStrings:DefaultConnection"];
-
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-
-            if (string.Equals(
-                    environmentName,
-                    "Production",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    "Connection string 'ConnectionStrings:DefaultConnection' was not configured.");
-            }
-        }
-        else
-        {
-            services.AddDbContext<StudyTimeDbContext>(options =>
-            {
-                options.UseNpgsql(connectionString);
-            });
+            throw new InvalidOperationException("Connection string 'ConnectionStrings:DefaultConnection' was not configured.");
         }
 
         services.AddDbContext<StudyTimeDbContext>(options =>
-        {
-            options.UseNpgsql(connectionString);
-        });
+            options.UseNpgsql(connectionString));
 
         services.AddScoped<IStudyAreaRepository, StudyAreaRepository>();
         services.AddScoped<IStudyAreaWeekAssessmentRepository, StudyAreaWeekAssessmentRepository>();
@@ -62,6 +43,8 @@ public static class DependencyInjection
         services.AddScoped<IStudyRecordLifoSelector, StudyRecordLifoSelector>();
 
         services.AddScoped<IAutoCreateNextWeekService, AutoCreateNextWeekService>();
+        services.AddScoped<AutoCreateNextWeekJob>();
+        services.AddHostedService<WeeklyRolloverBackgroundService>();
 
         return services;
     }

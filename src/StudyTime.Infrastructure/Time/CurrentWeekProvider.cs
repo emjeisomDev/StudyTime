@@ -1,11 +1,12 @@
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.ValueObjects;
+using static StudyTime.Domain.Constants.TimeZones;
 
 namespace StudyTime.Infrastructure.Time;
 
 public sealed class CurrentWeekProvider : ICurrentWeekProvider
 {
-    private const string OfficialTimeZoneId = "America/Sao_Paulo";
+    private const string OfficialTimeZoneId = Official;
 
     private readonly IClock _clock;
     private readonly TimeZoneInfo _officialTimeZone;

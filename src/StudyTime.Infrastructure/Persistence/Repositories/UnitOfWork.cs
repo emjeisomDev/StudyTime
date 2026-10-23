@@ -1,6 +1,5 @@
 using StudyTime.Domain.Abstractions;
 
-
 namespace StudyTime.Infrastructure.Persistence.Repositories;
 
 public sealed class UnitOfWork : IUnitOfWork
@@ -53,7 +52,7 @@ public sealed class UnitOfWork : IUnitOfWork
     {
         if (_transaction is null)
         {
-            throw new InvalidOperationException("No active database transaction exists.");
+            return;
         }
 
         try
