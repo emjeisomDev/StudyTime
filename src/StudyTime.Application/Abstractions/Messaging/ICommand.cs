@@ -6,6 +6,6 @@ public interface ICommand : IUseCase, IRequest
 {
 }
 
-public interface ICommand<out TResponse> : IUseCase, IRequest<TResponse>
+public interface ICommand<out TResponse> : ICommand, IRequest<TResponse>
 {
 }

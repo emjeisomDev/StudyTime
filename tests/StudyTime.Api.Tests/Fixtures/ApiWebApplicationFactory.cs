@@ -1,5 +1,6 @@
 using Testcontainers.PostgreSql;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 using StudyTime.Domain.Abstractions;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -67,9 +68,11 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         _postgresStarted = true;
     }
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    protected override IHost CreateHost(IHostBuilder builder)
     {
-        builder.ConfigureAppConfiguration((_, configuration) =>
+        // A connection string is read by Program before WebApplication.Build().
+        // ConfigureHostConfiguration makes it available before the entry point runs.
+        builder.ConfigureHostConfiguration(configuration =>
         {
             configuration.AddInMemoryCollection(
                 new Dictionary<string, string?>
@@ -79,6 +82,11 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
                 });
         });
 
+        return base.CreateHost(builder);
+    }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
         builder.ConfigureTestServices(services =>
         {
             // Força o DbContext de integração a usar o PostgreSQL do Testcontainers.

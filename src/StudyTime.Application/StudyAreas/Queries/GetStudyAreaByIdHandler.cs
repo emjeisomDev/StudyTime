@@ -8,8 +8,7 @@ public sealed class GetStudyAreaByIdHandler(IStudyAreaRepository studyAreaReposi
     : IRequestHandler<GetStudyAreaByIdQuery, StudyAreaDto>
 {
     private readonly IStudyAreaRepository _studyAreaRepository =
-        studyAreaRepository ?? throw new ArgumentNullException(
-            nameof(studyAreaRepository));
+        studyAreaRepository ?? throw new ArgumentNullException(nameof(studyAreaRepository));
 
     public async Task<StudyAreaDto> Handle(
         GetStudyAreaByIdQuery request,

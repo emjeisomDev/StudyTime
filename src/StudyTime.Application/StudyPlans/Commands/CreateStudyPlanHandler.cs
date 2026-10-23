@@ -42,6 +42,6 @@ public sealed class CreateStudyPlanHandler(
             studyPlan.Id,
             studyPlan.Name,
             studyPlan.Coefficient.Value,
-            studyPlan.Status.ToString());
+            studyPlan.Status.ToString().ToLowerInvariant());
     }
 }

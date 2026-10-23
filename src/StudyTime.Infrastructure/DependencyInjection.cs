@@ -20,13 +20,27 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var connectionString =
-            configuration["ConnectionStrings:DefaultConnection"];
+        var connectionString = configuration["ConnectionStrings:DefaultConnection"];
 
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException(
-                "Connection string 'ConnectionStrings:DefaultConnection' was not configured.");
+            var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            if (string.Equals(
+                    environmentName,
+                    "Production",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Connection string 'ConnectionStrings:DefaultConnection' was not configured.");
+            }
+        }
+        else
+        {
+            services.AddDbContext<StudyTimeDbContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+            });
         }
 
         services.AddDbContext<StudyTimeDbContext>(options =>

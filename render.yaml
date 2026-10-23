@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: studytime-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Cors__AllowedOrigins
+        sync: false
+
+databases:
+  - name: studytime-db
+    databaseName: studytime
+    user: studytime
+    plan: free
+    postgresMajorVersion: "17"

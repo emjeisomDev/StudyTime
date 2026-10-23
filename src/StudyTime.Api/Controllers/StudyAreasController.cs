@@ -17,7 +17,7 @@ namespace StudyTime.Api.Controllers;
 //     creation of a third file.
 **/
 [ApiController]
-[Route("api/v1/study-areas")]
+[Route("study-areas")]
 [Produces("application/json")]
 public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : ControllerBase
 {
@@ -56,6 +56,15 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
                 "Study area not found",
                 exception.Message));
         }
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<StudyAreaResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<StudyAreaResponse>>> GetAll(CancellationToken cancellationToken)
+    {
+        var dtos = await _mediator.Send(new GetStudyAreasQuery(), cancellationToken);
+        var responses = _mapper.Map<IReadOnlyList<StudyAreaResponse>>(dtos);
+        return Ok(responses);
     }
 
     [HttpPost]

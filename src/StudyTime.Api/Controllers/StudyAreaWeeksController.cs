@@ -17,7 +17,7 @@ namespace StudyTime.Api.Controllers;
 //     DELETE	/study-area-weeks/{id}	204 No Content
 **/
 [ApiController]
-[Route("api/v1/study-area-weeks")]
+[Route("study-area-weeks")]
 [Produces("application/json")]
 public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper) : ControllerBase
 {

@@ -1,5 +1,5 @@
 # Build
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401 AS build
 WORKDIR /src
 
 COPY global.json ./
@@ -22,11 +22,11 @@ RUN dotnet publish "$PROJECT_PATH" \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# Instala apenas o curl para o HEALTHCHECK.
+# O usuário/grupo "app" já existe na imagem base do .NET 10.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd --system app \
-    && useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish ./
 

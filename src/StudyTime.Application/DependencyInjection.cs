@@ -1,5 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
+using FluentValidation;
 using StudyTime.Application.Behaviors;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace StudyTime.Application;
 
@@ -7,6 +8,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         var assembly = typeof(DependencyInjection).Assembly;
 
         services.AddMediatR(configuration =>
@@ -16,7 +18,7 @@ public static class DependencyInjection
             configuration.AddOpenBehavior(typeof(TransactionBehavior<,>));
         });
 
-        services.AddAutoMapper(cfg => { }, assembly);
+        services.AddValidatorsFromAssembly(assembly);
 
         return services;
     }

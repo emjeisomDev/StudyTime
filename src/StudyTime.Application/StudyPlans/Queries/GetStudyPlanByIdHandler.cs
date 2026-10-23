@@ -26,6 +26,6 @@ public sealed class GetStudyPlanByIdHandler(IStudyPlanRepository studyPlanReposi
             studyPlan.Id,
             studyPlan.Name,
             studyPlan.Coefficient.Value,
-            studyPlan.Status.ToString());
+            studyPlan.Status.ToString().ToLowerInvariant());
     }
 }

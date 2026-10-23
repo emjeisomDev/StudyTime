@@ -38,6 +38,11 @@ public sealed class ProblemDetailsFactory
                  "Validation Error",
                  "One or more validation errors occurred."),
 
+            KeyNotFoundException =>
+                (StatusCodes.Status404NotFound,
+                 "Not Found",
+                 exception.Message),
+
             DomainException =>
                 (StatusCodes.Status422UnprocessableEntity,
                  "Domain Rule Violation",

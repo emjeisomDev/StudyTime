@@ -8,7 +8,7 @@ public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfW
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     public async Task<TResponse> Handle(
         TRequest request,

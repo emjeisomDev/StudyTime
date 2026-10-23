@@ -20,12 +20,52 @@ namespace StudyTime.Api.Controllers;
 //     states are not accepted.
 **/
 [ApiController]
-[Route("api/v1/study-plans")]
+[Route("study-plans")]
 [Produces("application/json")]
 public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : ControllerBase
 {
     private readonly IMediator _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(StudyPlanResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StudyPlanResponse>> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(CreateProblem(
+                StatusCodes.Status400BadRequest,
+                "Invalid study plan identifier",
+                "The study plan identifier cannot be empty."));
+        }
+
+        var dto = await _mediator.Send(
+            new GetStudyPlanByIdQuery(id),
+            cancellationToken);
+
+        if (dto is null)
+        {
+            return NotFound(CreateProblem(
+                StatusCodes.Status404NotFound,
+                "Study plan not found",
+                $"StudyPlan with id '{id}' was not found."));
+        }
+
+        return Ok(_mapper.Map<StudyPlanResponse>(dto));
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IReadOnlyList<StudyPlanResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<StudyPlanResponse>>> GetAll(CancellationToken cancellationToken)
+    {
+        var dtos = await _mediator.Send(new GetStudyPlansQuery(), cancellationToken);
+        var responses = _mapper.Map<IReadOnlyList<StudyPlanResponse>>(dtos);
+        return Ok(responses);
+    }
 
     [HttpPost]
     [ProducesResponseType(typeof(StudyPlanResponse), StatusCodes.Status201Created)]
@@ -94,17 +134,11 @@ public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : C
 
         StudyPlanStatus status;
 
-        if (string.Equals(
-            request.Status,
-            "active",
-            StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(request.Status, "active", StringComparison.OrdinalIgnoreCase))
         {
             status = StudyPlanStatus.Active;
         }
-        else if (string.Equals(
-            request.Status,
-            "inactive",
-            StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(request.Status, "inactive", StringComparison.OrdinalIgnoreCase))
         {
             status = StudyPlanStatus.Inactive;
         }
@@ -118,13 +152,8 @@ public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : C
 
         try
         {
-            await _mediator.Send(
-                new UpdateStudyPlanStatusCommand(id, status),
-                cancellationToken);
-
-            var dto = await _mediator.Send(
-                new GetStudyPlanByIdQuery(id),
-                cancellationToken);
+            await _mediator.Send(new UpdateStudyPlanStatusCommand(id, status), cancellationToken);
+            var dto = await _mediator.Send(new GetStudyPlanByIdQuery(id), cancellationToken);
 
             if (dto is null)
             {
@@ -138,10 +167,7 @@ public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : C
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(CreateProblem(
-                StatusCodes.Status404NotFound,
-                "Study plan not found",
-                exception.Message));
+            return NotFound(CreateProblem(StatusCodes.Status404NotFound, "Study plan not found", exception.Message));
         }
         catch (DomainException exception)
         {
@@ -157,37 +183,6 @@ public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : C
                 "Study plan validation failed",
                 exception.Message));
         }
-    }
-
-    [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(StudyPlanResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<StudyPlanResponse>> GetById(
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        if (id == Guid.Empty)
-        {
-            return BadRequest(CreateProblem(
-                StatusCodes.Status400BadRequest,
-                "Invalid study plan identifier",
-                "The study plan identifier cannot be empty."));
-        }
-
-        var dto = await _mediator.Send(
-            new GetStudyPlanByIdQuery(id),
-            cancellationToken);
-
-        if (dto is null)
-        {
-            return NotFound(CreateProblem(
-                StatusCodes.Status404NotFound,
-                "Study plan not found",
-                $"StudyPlan with id '{id}' was not found."));
-        }
-
-        return Ok(_mapper.Map<StudyPlanResponse>(dto));
     }
 
     private static ProblemDetails CreateProblem(

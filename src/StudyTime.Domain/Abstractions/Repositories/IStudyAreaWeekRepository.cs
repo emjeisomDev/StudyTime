@@ -8,8 +8,7 @@ public interface IStudyAreaWeekRepository
         (Guid id, CancellationToken cancellationToken = default);
 
     public Task<IReadOnlyList<StudyAreaWeek>> GetAllAsync
-        (
-        CancellationToken cancellationToken = default);
+        (CancellationToken cancellationToken = default);
 
     public Task<IReadOnlyList<StudyAreaWeek>> GetByWeekStartDateAsync
         (DateOnly weekStartDate, CancellationToken cancellationToken = default);

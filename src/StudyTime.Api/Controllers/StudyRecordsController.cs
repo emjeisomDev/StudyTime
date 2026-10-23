@@ -19,7 +19,7 @@ namespace StudyTime.Api.Controllers;
 /// Uncaught domain exceptions continue to be handled by the existing middleware.
 /// </summary>
 [ApiController]
-[Route("api/v1/study-area-weeks/{studyAreaWeekId:guid}/study-records")]
+[Route("study-area-weeks/{studyAreaWeekId:guid}/study-records")]
 [Produces("application/json")]
 public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) : ControllerBase
 {
