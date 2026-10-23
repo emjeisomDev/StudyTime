@@ -48,6 +48,11 @@ public sealed class ProblemDetailsFactory
                  "Domain Rule Violation",
                  exception.Message),
 
+            ArgumentException =>
+                (StatusCodes.Status422UnprocessableEntity,
+                 "Invalid Request",
+                 exception.Message),
+
             BadHttpRequestException =>
                 (StatusCodes.Status400BadRequest,
                  "Bad Request",

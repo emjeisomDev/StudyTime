@@ -1,5 +1,5 @@
-using AutoMapper;
 using MediatR;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using StudyTime.Api.Contracts.Requests;
 using StudyTime.Api.Contracts.Responses;

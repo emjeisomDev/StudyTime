@@ -5,8 +5,7 @@ namespace StudyTime.Api.Extensions;
 
 public static class SwaggerExtensions
 {
-    public static IServiceCollection AddSwaggerDocumentation(
-        this IServiceCollection services)
+    public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
         services.AddSwaggerGen(options =>
         {
@@ -30,8 +29,7 @@ public static class SwaggerExtensions
         return services;
     }
 
-    public static WebApplication UseSwaggerDocumentation(
-        this WebApplication app)
+    public static WebApplication UseSwaggerDocumentation(this WebApplication app)
     {
         if (app.Environment.IsDevelopment())
         {

@@ -4,7 +4,9 @@ using StudyTime.Api.Mappings;
 using StudyTime.Api.Extensions;
 using StudyTime.Api.Middleware;
 using StudyTime.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using StudyTime.Application.Mappings;
+using StudyTime.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +16,11 @@ var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection");
 
 const string connectionStringMissingMessage =
-    "A connection string não foi configurada. Defina a variável de ambiente ConnectionStrings__DefaultConnection.";
+    "The connection string has not been configured. Set the ConnectionStrings__DefaultConnection environment variable.";
 
 var connectionStringMissing = string.IsNullOrWhiteSpace(connectionString);
 
-if (connectionStringMissing && isProduction)
+if (connectionStringMissing)
 {
     throw new InvalidOperationException(connectionStringMissingMessage);
 }
@@ -46,9 +48,9 @@ if (origins.Length == 0)
     if (isProduction)
     {
         throw new InvalidOperationException(
-            "Nenhuma origem CORS foi configurada para Production. " +
-            "Defina Cors__AllowedOrigins com pelo menos uma origem HTTPS " +
-            "ou HTTP válida, separada por ';' ou ','.");
+            @"Nenhuma origem CORS foi configurada para Production. 
+            Defina Cors__AllowedOrigins com pelo menos uma origem HTTPS 
+            ou HTTP válida, separada por ';' ou ','.");
     }
 
     origins = new[] { "http://localhost:4200" };
@@ -67,9 +69,9 @@ var normalizedOrigins = origins
             !string.IsNullOrEmpty(uri.Fragment))
         {
             throw new InvalidOperationException(
-                $"Origem CORS inválida: '{origin}'. " +
-                "Informe somente a origem, por exemplo " +
-                "'https://frontend.example.com' ou 'http://localhost:4200'");
+                @$"Origem CORS inválida: '{origin}'. 
+                Informe somente a origem, por exemplo 
+                'https://frontend.example.com' ou 'http://localhost:4200'");
         }
 
         return uri.GetLeftPart(UriPartial.Authority);
@@ -85,11 +87,6 @@ builder.Services.AddAutoMapper(
     typeof(MappingProfile).Assembly);
 
 builder.Services.AddInfrastructure(builder.Configuration);
-
-// Registra os mapeamentos DTO -> Response da camada API.
-builder.Services.AddAutoMapper(
-    cfg => { },
-    typeof(ApiMappingProfile).Assembly);
 
 builder.Services.AddControllers(options =>
 {
@@ -116,13 +113,6 @@ builder.Services.AddScoped<ProblemDetailsFactory>();
 
 var app = builder.Build();
 
-if (connectionStringMissing)
-{
-    app.Logger.LogWarning(
-        "{Message} A aplicação está fora de Production.",
-        connectionStringMissingMessage);
-}
-
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors("AngularFrontend");
@@ -136,6 +126,13 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.MapHealthChecks("/health");
 
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    await using var migrationScope = app.Services.CreateAsyncScope();
+    var dbContext = migrationScope.ServiceProvider.GetRequiredService<StudyTimeDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 app.Run();
 
-public partial class Program;
+public partial class Program { }

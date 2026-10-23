@@ -10,7 +10,6 @@ using StudyTime.Application.StudyPlans.Commands;
 
 namespace StudyTime.Api.Controllers;
 
-
 /**
 //     GET /study-plans/{id}: returns 200 OK or 404 Not Found.
 //     POST /study-plans: creates the plan with a positive coefficient and returns 201 Created.
