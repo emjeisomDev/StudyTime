@@ -21,7 +21,7 @@ public sealed record WeekRange
         End = Start.AddDays(6).AddHours(23).AddMinutes(59).AddSeconds(59);
     }
 
-    public WeekRange(DateOnly startDate) : this(startDate.ToDateTime(TimeOnly.MinValue)){ }
+    public WeekRange(DateOnly startDate) : this(startDate.ToDateTime(TimeOnly.MinValue)) { }
 
     public bool Contains(DateTime value)
     {
