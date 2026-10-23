@@ -12,10 +12,10 @@ public sealed class StudyTimeDbContextFactory : IDesignTimeDbContextFactory<Stud
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             connectionString = @"Host=localhost;
-                                Port=5432;
-                                Database=studytime
-                                Username=studytime;
-                                Password=studytime_dev";
+							    Port=5432;
+								Database=studytime
+								Username=studytime;
+								Password=studytime_dev";
         }
 
         optionsBuilder.UseNpgsql(connectionString);
