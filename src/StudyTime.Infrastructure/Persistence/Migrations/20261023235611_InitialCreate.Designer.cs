@@ -12,7 +12,7 @@ using StudyTime.Infrastructure.Persistence;
 namespace StudyTime.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(StudyTimeDbContext))]
-    [Migration("20261007123321_InitialCreate")]
+    [Migration("20261023235611_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace StudyTime.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
