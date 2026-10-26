@@ -1,6 +1,7 @@
 using MediatR;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StudyTime.Api.Extensions;
 using StudyTime.Api.Contracts.Responses;
 using StudyTime.Application.WeeklyAssessments.Queries;
 
@@ -21,6 +22,7 @@ public sealed class WeeksController(IMediator mediator, IMapper mapper) : Contro
     [ProducesResponseType(typeof(PreviousWeekSummaryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<PreviousWeekSummaryResponse>> GetPreviousSummary(CancellationToken cancellationToken)
     {
         try
@@ -31,12 +33,10 @@ public sealed class WeeksController(IMediator mediator, IMapper mapper) : Contro
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Previous week summary not found",
-                Detail = exception.Message
-            });
+            return NotFound(this.CreateProblemDetails(
+                StatusCodes.Status404NotFound,
+                "Previous week summary not found",
+                exception.Message));
         }
     }
 }

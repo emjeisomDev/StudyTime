@@ -1,13 +1,14 @@
-using MediatR;
 using StudyTime.Domain.Entities;
 using StudyTime.Application.Dtos;
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.ValueObjects;
 using StudyTime.Domain.Abstractions.Repositories;
+using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.StudyPlans.Commands;
 
-public sealed class CreateStudyPlanHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork) : IRequestHandler<CreateStudyPlanCommand, StudyPlanDto>
+public sealed class CreateStudyPlanHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork)
+     : ICommandHandler<CreateStudyPlanCommand, StudyPlanDto>
 {
     private readonly IStudyPlanRepository _studyPlanRepository =
         studyPlanRepository ?? throw new ArgumentNullException(

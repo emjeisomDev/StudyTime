@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace StudyTime.Api.Filters;
 
-public sealed class ValidationFilter : IAsyncActionFilter
+public sealed class ValidationFilter(ProblemDetailsFactory problemDetailsFactory) : IAsyncActionFilter
 {
+    private readonly ProblemDetailsFactory _problemDetailsFactory =
+        problemDetailsFactory ?? throw new ArgumentNullException(nameof(problemDetailsFactory));
+
     public async Task OnActionExecutionAsync(
         ActionExecutingContext context,
         ActionExecutionDelegate next)
@@ -25,14 +29,16 @@ public sealed class ValidationFilter : IAsyncActionFilter
                                 : error.ErrorMessage)
                         .ToArray());
 
-            var problem = new ValidationProblemDetails(errors)
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Validation Error",
-                Detail = "One or more validation errors occurred.",
-                Instance = context.HttpContext.Request.Path
-            };
+            var problem = problemDetailsFactory.CreateValidationProblemDetails(
+                context.HttpContext,
+                context.ModelState,
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Validation Error",
+                detail: "One or more validation errors occurred.",
+                instance: context.HttpContext.Request.Path);
+
             problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+
             context.Result = new BadRequestObjectResult(problem);
             return;
         }

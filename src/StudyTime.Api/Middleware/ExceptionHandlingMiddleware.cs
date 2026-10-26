@@ -75,8 +75,10 @@ public sealed class ExceptionHandlingMiddleware
                 problem.Status ?? StatusCodes.Status500InternalServerError;
             context.Response.ContentType = "application/problem+json";
 
+            // Serialize using the concrete runtime type so ValidationProblemDetails
+            // keeps its top-level "errors" property instead of losing it as ProblemDetails.
             await context.Response.WriteAsync(
-                JsonSerializer.Serialize(problem, JsonOptions),
+                JsonSerializer.Serialize(problem, problem.GetType(), JsonOptions),
                 context.RequestAborted);
         }
     }

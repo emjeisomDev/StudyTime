@@ -1,5 +1,4 @@
 using StudyTime.Application;
-using StudyTime.Api.Filters;
 using StudyTime.Api.Mappings;
 using StudyTime.Api.Extensions;
 using StudyTime.Api.Middleware;
@@ -88,34 +87,20 @@ builder.Services.AddAutoMapper(
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<ValidationFilter>();
-});
-
+// Centraliza serviços HTTP (controllers, CORS, health checks e compressão)
+// para evitar configurações duplicadas entre Program.cs e extensões.
+builder.Services.AddApiServices(normalizedOrigins);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerDocumentation();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AngularFrontend", policy =>
-    {
-        policy
-            .WithOrigins(normalizedOrigins)
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
-});
-
-builder.Services.AddHealthChecks();
-
 builder.Services.AddScoped<ProblemDetailsFactory>();
 
 var app = builder.Build();
 
+// Compression wraps the exception handler so ProblemDetails responses written by
+// the handler also pass through the compression stream when the client accepts it.
+app.UseResponseCompression();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
-app.UseCors("AngularFrontend");
+app.UseCors(StudyTime.Api.Extensions.ServiceCollectionExtensions.AngularCorsPolicy);
 
 if (app.Environment.IsDevelopment())
 {
@@ -126,7 +111,17 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+var applyMigrationsOnStartup =
+    builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup");
+
+if (applyMigrationsOnStartup && !app.Environment.IsDevelopment())
+{
+    throw new InvalidOperationException(
+        @"Database:ApplyMigrationsOnStartup can only be enabled in Development. 
+        Run production migrations as a separate deployment step.");
+}
+
+if (applyMigrationsOnStartup)
 {
     await using var migrationScope = app.Services.CreateAsyncScope();
     var dbContext = migrationScope.ServiceProvider.GetRequiredService<StudyTimeDbContext>();

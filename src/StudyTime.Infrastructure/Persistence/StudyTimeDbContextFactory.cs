@@ -11,7 +11,7 @@ public sealed class StudyTimeDbContextFactory : IDesignTimeDbContextFactory<Stud
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            connectionString = @"Host=localhost;Port=5432;Database=studytime;Username=studytime;Password=studytime_dev";
+            connectionString = @"Host=localhost;Port=5433;Database=studytime;Username=studytime;Password=studytime_dev";
         }
 
         optionsBuilder.UseNpgsql(connectionString);

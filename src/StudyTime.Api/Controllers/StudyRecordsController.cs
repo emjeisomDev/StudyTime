@@ -7,6 +7,7 @@ using StudyTime.Api.Contracts.Requests;
 using StudyTime.Api.Contracts.Responses;
 using StudyTime.Application.StudyRecords.Commands;
 using StudyTime.Application.StudyRecords.Queries;
+using StudyTime.Api.Extensions;
 
 namespace StudyTime.Api.Controllers;
 
@@ -28,10 +29,11 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
 
     [HttpPost]
     [ProducesResponseType(typeof(StudyRecordResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyRecordResponse>> Create(
         Guid studyAreaWeekId,
         [FromBody] CreateStudyRecordRequest request,
@@ -39,7 +41,7 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
     {
         if (studyAreaWeekId == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -58,15 +60,16 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<StudyRecordResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IReadOnlyList<StudyRecordResponse>>> GetByWeek(
         Guid studyAreaWeekId,
         CancellationToken cancellationToken)
     {
         if (studyAreaWeekId == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -84,7 +87,7 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(CreateProblem(
+            return NotFound(this.CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Resource not found",
                 exception.Message));
@@ -93,17 +96,18 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
 
     [HttpDelete("last")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteLast(
         Guid studyAreaWeekId,
         CancellationToken cancellationToken)
     {
         if (studyAreaWeekId == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -122,27 +126,17 @@ public sealed class StudyRecordsController(IMediator mediator, IMapper mapper) :
         }
         catch (NoEligibleStudyRecordException exception)
         {
-            return NotFound(CreateProblem(
+            return NotFound(this.CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Resource not found",
                 exception.Message));
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(CreateProblem(
+            return NotFound(this.CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Resource not found",
                 exception.Message));
         }
-    }
-
-    private static ProblemDetails CreateProblem(int status, string title, string detail)
-    {
-        return new ProblemDetails
-        {
-            Status = status,
-            Title = title,
-            Detail = detail
-        };
     }
 }

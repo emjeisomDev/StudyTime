@@ -1,11 +1,12 @@
 using MediatR;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StudyTime.Api.Extensions;
+using StudyTime.Domain.Exceptions;
 using StudyTime.Api.Contracts.Requests;
 using StudyTime.Api.Contracts.Responses;
 using StudyTime.Application.StudyAreas.Commands;
 using StudyTime.Application.StudyAreas.Queries;
-using StudyTime.Domain.Exceptions;
 
 namespace StudyTime.Api.Controllers;
 
@@ -27,15 +28,16 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(StudyAreaResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaResponse>> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area identifier",
                 "The study area identifier cannot be empty."));
@@ -51,7 +53,7 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(CreateProblem(
+            return NotFound(this.CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Study area not found",
                 exception.Message));
@@ -60,6 +62,7 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
 
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<StudyAreaResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IReadOnlyList<StudyAreaResponse>>> GetAll(CancellationToken cancellationToken)
     {
         var dtos = await _mediator.Send(new GetStudyAreasQuery(), cancellationToken);
@@ -70,7 +73,9 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
     [HttpPost]
     [ProducesResponseType(typeof(StudyAreaResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaResponse>> Create(
         [FromBody] CreateStudyAreaRequest request,
         CancellationToken cancellationToken)
@@ -92,14 +97,14 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
         }
         catch (DomainException exception)
         {
-            return UnprocessableEntity(CreateProblem(
+            return UnprocessableEntity(this.CreateProblemDetails(
                 StatusCodes.Status422UnprocessableEntity,
                 "Study area validation failed",
                 exception.Message));
         }
         catch (ArgumentException exception)
         {
-            return UnprocessableEntity(CreateProblem(
+            return UnprocessableEntity(this.CreateProblemDetails(
                 StatusCodes.Status422UnprocessableEntity,
                 "Study area validation failed",
                 exception.Message));
@@ -110,7 +115,9 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
     [ProducesResponseType(typeof(StudyAreaResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaResponse>> Update(
         Guid id,
         [FromBody] CreateStudyAreaRequest request,
@@ -118,7 +125,7 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area identifier",
                 "The study area identifier cannot be empty."));
@@ -137,34 +144,25 @@ public sealed class StudyAreasController(IMediator mediator, IMapper mapper) : C
         }
         catch (KeyNotFoundException exception)
         {
-            return NotFound(CreateProblem(
+            return NotFound(this.CreateProblemDetails(
                 StatusCodes.Status404NotFound,
                 "Study area not found",
                 exception.Message));
         }
         catch (DomainException exception)
         {
-            return UnprocessableEntity(CreateProblem(
+            return UnprocessableEntity(this.CreateProblemDetails(
                 StatusCodes.Status422UnprocessableEntity,
                 "Study area validation failed",
                 exception.Message));
         }
         catch (ArgumentException exception)
         {
-            return UnprocessableEntity(CreateProblem(
+            return UnprocessableEntity(this.CreateProblemDetails(
                 StatusCodes.Status422UnprocessableEntity,
                 "Study area validation failed",
                 exception.Message));
         }
     }
 
-    private static ProblemDetails CreateProblem(int status, string title, string detail)
-    {
-        return new ProblemDetails
-        {
-            Status = status,
-            Title = title,
-            Detail = detail
-        };
-    }
 }

@@ -1,10 +1,12 @@
-using MediatR;
+using StudyTime.Application.Abstractions.Messaging;
+using StudyTime.Application.Dtos;
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.Abstractions.Repositories;
 
 namespace StudyTime.Application.StudyPlans.Commands;
 
-public sealed class UpdateStudyPlanStatusHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork) : IRequestHandler<UpdateStudyPlanStatusCommand>
+public sealed class UpdateStudyPlanStatusHandler(IStudyPlanRepository studyPlanRepository, IUnitOfWork unitOfWork)
+     : ICommandHandler<UpdateStudyPlanStatusCommand, StudyPlanDto>
 {
     private readonly IStudyPlanRepository _studyPlanRepository =
         studyPlanRepository ?? throw new ArgumentNullException(
@@ -14,7 +16,7 @@ public sealed class UpdateStudyPlanStatusHandler(IStudyPlanRepository studyPlanR
         unitOfWork ?? throw new ArgumentNullException(
             nameof(unitOfWork));
 
-    public async Task Handle(
+    public async Task<StudyPlanDto> Handle(
         UpdateStudyPlanStatusCommand request,
         CancellationToken cancellationToken)
     {
@@ -35,5 +37,11 @@ public sealed class UpdateStudyPlanStatusHandler(IStudyPlanRepository studyPlanR
         _studyPlanRepository.Update(studyPlan);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new StudyPlanDto(
+            studyPlan.Id,
+            studyPlan.Name,
+            studyPlan.Coefficient.Value,
+            studyPlan.Status.ToString().ToLowerInvariant());
     }
 }

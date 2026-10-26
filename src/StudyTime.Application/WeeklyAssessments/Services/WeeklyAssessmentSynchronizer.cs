@@ -40,6 +40,11 @@ public sealed class WeeklyAssessmentSynchronizer(
         unitOfWork
         ?? throw new ArgumentNullException(nameof(unitOfWork));
 
+    /// <summary>
+    /// Recalculates minute aggregates from persisted StudyRecords. Call from a command
+    /// while its UnitOfWork transaction is active; this method saves pending record
+    /// mutations and all derived values inside that same transaction.
+    /// </summary>
     public async Task SynchronizeAsync(
         Guid weeklyAssessmentId,
         CancellationToken cancellationToken = default)
@@ -48,6 +53,10 @@ public sealed class WeeklyAssessmentSynchronizer(
         {
             throw new ArgumentException("WeeklyAssessmentId is required.", nameof(weeklyAssessmentId));
         }
+
+        // Save an added/deleted StudyRecord before querying persisted records.
+        // Since callers are command handlers, TransactionBehavior keeps this write atomic.
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var weeklyAssessment =
             await _weeklyAssessmentRepository.GetByIdAsync(weeklyAssessmentId, cancellationToken);

@@ -1,6 +1,7 @@
 using FluentValidation;
 using StudyTime.Application.Behaviors;
 using Microsoft.Extensions.DependencyInjection;
+using StudyTime.Application.WeeklyAssessments.Services;
 
 namespace StudyTime.Application;
 
@@ -19,6 +20,7 @@ public static class DependencyInjection
         });
 
         services.AddValidatorsFromAssembly(assembly);
+        services.AddScoped<IWeeklyAssessmentSynchronizer, WeeklyAssessmentSynchronizer>();
 
         return services;
     }

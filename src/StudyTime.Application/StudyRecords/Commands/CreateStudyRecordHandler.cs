@@ -6,17 +6,18 @@ using StudyTime.Domain.Exceptions;
 using StudyTime.Domain.ValueObjects;
 using StudyTime.Domain.Abstractions;
 using StudyTime.Domain.Abstractions.Repositories;
+using StudyTime.Application.WeeklyAssessments.Services;
 
 namespace StudyTime.Application.StudyRecords.Commands;
 
 public sealed class CreateStudyRecordHandler(
     IClock clock,
-    IUnitOfWork unitOfWork,
     IIsoWeekCalendar isoWeekCalendar,
     ICurrentWeekProvider currentWeekProvider,
     IStudyRecordRepository studyRecordRepository,
     IStudyAreaWeekRepository studyAreaWeekRepository,
     IWeeklyAssessmentRepository weeklyAssessmentRepository,
+    IWeeklyAssessmentSynchronizer weeklyAssessmentSynchronizer,
     IStudyAreaWeekAssessmentRepository studyAreaWeekAssessmentRepository)
     : IRequestHandler<CreateStudyRecordCommand, StudyRecordDto>
 {
@@ -25,9 +26,8 @@ public sealed class CreateStudyRecordHandler(
     private readonly IStudyAreaWeekRepository _studyAreaWeekRepository =
         studyAreaWeekRepository ?? throw new ArgumentNullException(nameof(studyAreaWeekRepository));
 
-    private readonly IStudyAreaWeekAssessmentRepository
-        _studyAreaWeekAssessmentRepository = studyAreaWeekAssessmentRepository
-            ?? throw new ArgumentNullException(nameof(studyAreaWeekAssessmentRepository));
+    private readonly IStudyAreaWeekAssessmentRepository _studyAreaWeekAssessmentRepository =
+        studyAreaWeekAssessmentRepository ?? throw new ArgumentNullException(nameof(studyAreaWeekAssessmentRepository));
 
     private readonly IWeeklyAssessmentRepository _weeklyAssessmentRepository =
         weeklyAssessmentRepository ?? throw new ArgumentNullException(nameof(weeklyAssessmentRepository));
@@ -43,13 +43,18 @@ public sealed class CreateStudyRecordHandler(
 
     private readonly IClock _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
-    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IWeeklyAssessmentSynchronizer _weeklyAssessmentSynchronizer =
+        weeklyAssessmentSynchronizer ?? throw new ArgumentNullException(nameof(weeklyAssessmentSynchronizer));
 
-    public async Task<StudyRecordDto> Handle(CreateStudyRecordCommand request, CancellationToken cancellationToken)
+    public async Task<StudyRecordDto> Handle(
+        CreateStudyRecordCommand request,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var studyAreaWeek = await _studyAreaWeekRepository.GetByIdAsync(request.StudyAreaWeekId, cancellationToken);
+        var studyAreaWeek = await _studyAreaWeekRepository.GetByIdAsync(
+            request.StudyAreaWeekId,
+            cancellationToken);
 
         if (studyAreaWeek is null)
         {
@@ -66,17 +71,15 @@ public sealed class CreateStudyRecordHandler(
 
         if (studyAreaWeek.WeekStartDate != currentWeekStart)
         {
-            throw new RecordNotInCurrentWeekException("StudyRecord creation is only allowed for the current week.");
+            throw new RecordNotInCurrentWeekException(
+                "StudyRecord creation is only allowed for the current week.");
         }
 
         var isoWeek = _isoWeekCalendar.GetIsoWeek(studyAreaWeek.WeekStartDate);
-
-        var weeklyAssessment =
-            await _weeklyAssessmentRepository
-                .GetByYearAndWeekNumberAsync(
-                    isoWeek.Year,
-                    isoWeek.WeekNumber,
-                    cancellationToken);
+        var weeklyAssessment = await _weeklyAssessmentRepository.GetByYearAndWeekNumberAsync(
+            isoWeek.Year,
+            isoWeek.WeekNumber,
+            cancellationToken);
 
         if (weeklyAssessment is null)
         {
@@ -85,11 +88,13 @@ public sealed class CreateStudyRecordHandler(
 
         if (weeklyAssessment.Id != studyAreaWeek.WeeklyAssessmentId)
         {
-            throw new DomainException("The WeeklyAssessment associated with the StudyAreaWeek does not match its ISO week.");
+            throw new DomainException(
+                "The WeeklyAssessment associated with the StudyAreaWeek does not match its ISO week.");
         }
 
-        var studyAreaWeeks = await _studyAreaWeekRepository
-                .GetByWeekStartDateAsync(studyAreaWeek.WeekStartDate, cancellationToken);
+        var studyAreaWeeks = await _studyAreaWeekRepository.GetByWeekStartDateAsync(
+            studyAreaWeek.WeekStartDate,
+            cancellationToken);
 
         if (studyAreaWeeks.Count == 0)
         {
@@ -106,8 +111,9 @@ public sealed class CreateStudyRecordHandler(
                     "All StudyAreaWeeks in the same week must reference the same WeeklyAssessment.");
             }
 
-            var configuredAssessment = await _studyAreaWeekAssessmentRepository
-                .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
+            var configuredAssessment = await _studyAreaWeekAssessmentRepository.GetByStudyAreaWeekIdAsync(
+                configuredWeek.Id,
+                cancellationToken);
             if (configuredAssessment is null || configuredAssessment.StudyAreaWeekId != configuredWeek.Id)
             {
                 throw new DomainException(
@@ -126,11 +132,7 @@ public sealed class CreateStudyRecordHandler(
                 "The WeeklyAssessment global goal is inconsistent with the individual goals of its configured week.");
         }
 
-        var individualAssessment = configuredAssessments.Single(
-            assessment => assessment.StudyAreaWeekId == studyAreaWeek.Id);
-
         var recordDate = GetCurrentLocalDate();
-
         WeekDateValidator.ValidateRecord(
             recordDate,
             studyAreaWeek.WeekStartDate,
@@ -143,66 +145,12 @@ public sealed class CreateStudyRecordHandler(
 
         await _studyRecordRepository.AddAsync(studyRecord, cancellationToken);
 
-        var individualRecords =
-            await _studyRecordRepository
-                .GetByStudyAreaWeekIdAsync(studyAreaWeek.Id, cancellationToken);
-
-        // The new StudyRecord is tracked by EF Core but has not been saved yet.
-        // Repository queries use AsNoTracking and therefore return only persisted records.
-        var individualMinutesStudied = SumMinutes(individualRecords.Append(studyRecord));
-        individualAssessment.UpdateMinutesStudied(individualMinutesStudied);
-        _studyAreaWeekAssessmentRepository.Update(individualAssessment);
-
-        var totalMinutesStudied = 0;
-
-        foreach (var configuredWeek in studyAreaWeeks)
-        {
-            var records = await _studyRecordRepository
-                    .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
-
-            var configuredWeekMinutes = SumMinutes(records);
-
-            if (configuredWeek.Id == studyAreaWeek.Id)
-            {
-                configuredWeekMinutes = checked(configuredWeekMinutes + studyRecord.Minutes.Value);
-            }
-
-            totalMinutesStudied = checked(totalMinutesStudied + configuredWeekMinutes);
-        }
-
-        weeklyAssessment.UpdateMinutesStudied(totalMinutesStudied);
-        _weeklyAssessmentRepository.Update(weeklyAssessment);
-
-        if (individualAssessment.MinutesStudied !=
-            individualRecords.Append(studyRecord).Sum(record => record.Minutes.Value))
-        {
-            throw new DomainException("The StudyAreaWeekAssessment minutes are inconsistent  with its StudyRecords.");
-        }
-
-        var confirmedGlobalMinutes = 0;
-
-        foreach (var configuredWeek in studyAreaWeeks)
-        {
-            var records =
-                await _studyRecordRepository
-                .GetByStudyAreaWeekIdAsync(configuredWeek.Id, cancellationToken);
-
-            var configuredWeekMinutes = SumMinutes(records);
-
-            if (configuredWeek.Id == studyAreaWeek.Id)
-            {
-                configuredWeekMinutes = checked(configuredWeekMinutes + studyRecord.Minutes.Value);
-            }
-
-            confirmedGlobalMinutes = checked(confirmedGlobalMinutes + configuredWeekMinutes);
-        }
-
-        if (weeklyAssessment.MinutesStudied != confirmedGlobalMinutes)
-        {
-            throw new DomainException("The WeeklyAssessment minutes are inconsistent with the StudyRecords of its week.");
-        }
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        // The synchronizer first saves pending record mutations inside the command's
+        // transaction, then recalculates all individual and global minute aggregates
+        // from persisted StudyRecords. Any failure rolls back the whole command.
+        await _weeklyAssessmentSynchronizer.SynchronizeAsync(
+            weeklyAssessment.Id,
+            cancellationToken);
 
         return new StudyRecordDto(
             studyRecord.Id,
@@ -217,21 +165,6 @@ public sealed class CreateStudyRecordHandler(
         var utcNow = DateTime.SpecifyKind(_clock.UtcNow, DateTimeKind.Utc);
         var timeZone = TimeZoneInfo.FindSystemTimeZoneById(SaoPauloTimeZoneId);
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(utcNow, timeZone);
-
         return DateOnly.FromDateTime(localNow);
-    }
-
-    private static int SumMinutes(IEnumerable<StudyRecord> records)
-    {
-        ArgumentNullException.ThrowIfNull(records);
-
-        var total = 0;
-
-        foreach (var record in records)
-        {
-            total = checked(total + record.Minutes.Value);
-        }
-
-        return total;
     }
 }

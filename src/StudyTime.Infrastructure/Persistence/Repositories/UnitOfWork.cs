@@ -1,3 +1,5 @@
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 using StudyTime.Domain.Abstractions;
 
 namespace StudyTime.Infrastructure.Persistence.Repositories;
@@ -26,7 +28,11 @@ public sealed class UnitOfWork : IUnitOfWork
             throw new InvalidOperationException("A database transaction is already active.");
         }
 
+        // Serializable isolation prevents concurrent commands from silently overwriting
+        // shared weekly aggregates. PostgreSQL can abort one transaction with SQLSTATE
+        // 40001/40P01; the API maps those outcomes to a retryable 409 Conflict.
         _transaction = await _dbContext.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
             cancellationToken);
     }
 

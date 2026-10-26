@@ -1,16 +1,24 @@
 using MediatR;
-using StudyTime.Application.Abstractions.Messaging;
+using Microsoft.Extensions.Logging;
 using StudyTime.Domain.Abstractions;
+using StudyTime.Application.Abstractions.Messaging;
 
 namespace StudyTime.Application.Behaviors;
 
-public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfWork) :
+public sealed class TransactionBehavior<TRequest, TResponse>(
+    IUnitOfWork unitOfWork,
+    ILogger<TransactionBehavior<TRequest, TResponse>> logger) :
     IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
-    private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly IUnitOfWork _unitOfWork = unitOfWork
+        ?? throw new ArgumentNullException(nameof(unitOfWork));
+    private readonly ILogger<TransactionBehavior<TRequest, TResponse>> _logger = logger
+        ?? throw new ArgumentNullException(nameof(logger));
 
-    public async Task<TResponse> Handle
-        (TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
     {
         if (request is not ICommand)
         {
@@ -25,18 +33,22 @@ public sealed class TransactionBehavior<TRequest, TResponse>(IUnitOfWork unitOfW
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
             return response;
         }
-        catch
+        catch (Exception originalException)
         {
             try
             {
+                // A rollback must not replace the exception that caused the transaction to fail.
                 await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
             }
-            catch
+            catch (Exception rollbackException)
             {
-                // Do not replace the original application/database exception with a rollback failure.
-                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                throw;
+                _logger.LogError(
+                    rollbackException,
+                    "Rollback failed after command {CommandType} failed. The original exception will be rethrown. OriginalExceptionType: {OriginalExceptionType}",
+                    typeof(TRequest).Name,
+                    originalException.GetType().FullName);
             }
+
             throw;
         }
     }

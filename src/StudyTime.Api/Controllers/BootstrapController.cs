@@ -24,8 +24,10 @@ public sealed class BootstrapController(IMediator mediator, IMapper mapper) : Co
     [HttpPost]
     [ProducesResponseType(typeof(IReadOnlyList<StudyAreaWeekResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IReadOnlyList<StudyAreaWeekResponse>>> Create(
         [FromBody] BootstrapRequest request,
         CancellationToken cancellationToken)

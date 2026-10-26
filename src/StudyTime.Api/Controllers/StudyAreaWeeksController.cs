@@ -1,6 +1,7 @@
 using MediatR;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using StudyTime.Api.Extensions;
 using StudyTime.Application.Dtos;
 using StudyTime.Api.Contracts.Requests;
 using StudyTime.Api.Contracts.Responses;
@@ -10,11 +11,11 @@ using StudyTime.Application.StudyAreaWeeks.Queries;
 namespace StudyTime.Api.Controllers;
 
 /**
-//     POST	/study-area-weeks	        201 Created
-//     POST	/study-area-weeks/batch	    201 Created
-//     GET	/study-area-weeks/{id}	    200 OK
-//     PUT	/study-area-weeks/{id}	    200 OK
-//     DELETE	/study-area-weeks/{id}	204 No Content
+//     POST	    /study-area-weeks	        201 Created
+//     POST	    /study-area-weeks/batch	    201 Created
+//     GET	    /study-area-weeks/{id}	    200 OK
+//     PUT	    /study-area-weeks/{id}	    200 OK
+//     DELETE	/study-area-weeks/{id}	    204 No Content
 **/
 [ApiController]
 [Route("study-area-weeks")]
@@ -30,8 +31,10 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     [HttpPost]
     [ProducesResponseType(typeof(StudyAreaWeekResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaWeekResponse>> Create(
         [FromBody] CreateStudyAreaWeekRequest request,
         CancellationToken cancellationToken)
@@ -57,8 +60,10 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     [HttpPost("batch")]
     [ProducesResponseType(typeof(IReadOnlyList<StudyAreaWeekResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IReadOnlyList<StudyAreaWeekResponse>>> CreateBatch(
         [FromBody] CreateStudyAreaWeeksBatchRequest request,
         CancellationToken cancellationToken)
@@ -96,14 +101,15 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(StudyAreaWeekResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaWeekResponse>> GetById(Guid id, CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -125,6 +131,7 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyAreaWeekResponse>> Update(
         Guid id,
         [FromBody] UpdateStudyAreaWeekRequest request,
@@ -132,7 +139,7 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -153,17 +160,18 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
     {
         if (id == Guid.Empty)
         {
-            return BadRequest(CreateProblem(
+            return BadRequest(this.CreateProblemDetails(
                 StatusCodes.Status400BadRequest,
                 "Invalid study area week identifier",
                 "The study area week identifier cannot be empty."));
@@ -177,13 +185,4 @@ public sealed class StudyAreaWeeksController(IMediator mediator, IMapper mapper)
         return NoContent();
     }
 
-    private static ProblemDetails CreateProblem(int status, string title, string detail)
-    {
-        return new ProblemDetails
-        {
-            Status = status,
-            Title = title,
-            Detail = detail
-        };
-    }
 }

@@ -5,6 +5,13 @@ namespace StudyTime.Domain.Entities;
 public sealed class StudyAreaWeekAssessment
 {
     public Guid Id { get; }
+
+    /// <summary>
+    /// Snapshot of the individual goal for this configured week. Changes made later
+    /// to StudyArea.StdWeekStudyTime or StudyPlan.Coefficient must not alter this
+    /// value unless a permitted StudyAreaWeek configuration update recalculates it.
+    /// See business rule R25.
+    /// </summary>
     public decimal WeekIndividualGoal { get; private set; }
     public int MinutesStudied { get; private set; }
     public Guid StudyAreaWeekId { get; }

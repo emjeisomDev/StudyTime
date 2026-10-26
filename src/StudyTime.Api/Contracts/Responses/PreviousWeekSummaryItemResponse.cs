@@ -1,4 +1,5 @@
 namespace StudyTime.Api.Contracts.Responses;
+
 public sealed record PreviousWeekSummaryItemResponse(
     StudyAreaResponse StudyArea,
     StudyPlanResponse StudyPlan,
