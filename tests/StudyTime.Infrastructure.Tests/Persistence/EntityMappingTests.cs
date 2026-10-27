@@ -1,10 +1,10 @@
+using Xunit;
 using System.Data.Common;
-using StudyTime.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using StudyTime.Domain.Entities;
 using StudyTime.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using StudyTime.Infrastructure.Persistence;
 using StudyTime.Infrastructure.Tests.Fixtures;
-using Xunit;
 
 namespace StudyTime.Infrastructure.Tests.Persistence;
 

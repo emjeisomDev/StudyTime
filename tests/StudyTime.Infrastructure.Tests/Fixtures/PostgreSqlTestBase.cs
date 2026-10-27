@@ -1,7 +1,7 @@
+using Xunit;
 using StudyTime.Domain.Entities;
 using StudyTime.Domain.ValueObjects;
 using StudyTime.Infrastructure.Persistence;
-using Xunit;
 
 namespace StudyTime.Infrastructure.Tests.Fixtures;
 
