@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddScoped<ValidationFilter>();
+        services.AddScoped<ProblemDetailsContentTypeFilter>();
         services.Configure<ApiBehaviorOptions>(options =>
         {
             options.SuppressModelStateInvalidFilter = true;
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
         services.AddControllers(options =>
         {
             options.Filters.AddService<ValidationFilter>();
+            options.Filters.AddService<ProblemDetailsContentTypeFilter>(int.MaxValue);
         });
 
         services.AddCors(options =>

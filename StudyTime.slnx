@@ -6,6 +6,7 @@
     <Project Path="src/StudyTime.Infrastructure/StudyTime.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/StudyTime.Api.IntegrationTests/StudyTime.Api.IntegrationTests.csproj" />
     <Project Path="tests/StudyTime.Application.Tests/StudyTime.Application.Tests.csproj" />
     <Project Path="tests/StudyTime.Domain.Tests/StudyTime.Domain.Tests.csproj" />
     <Project Path="tests/StudyTime.Infrastructure.Tests/StudyTime.Infrastructure.Tests.csproj" />

@@ -13,12 +13,12 @@ using StudyTime.Application.StudyPlans.Commands;
 namespace StudyTime.Api.Controllers;
 
 /**
-	//     GET    /study-plans/{id}:        returns 200 OK or 404 Not Found.
-	//     POST   /study-plans:             creates the plan with a positive coefficient and returns 201 Created.
-	//     PATCH  /study-plans/{id}/status: accepts only "active" or "inactive"; allows bidirectional 
-	//     transitions and returns 200 OK.
-	//     The status response is validated as exact text, ignoring only case; numeric values ​​or other 
-	//     states are not accepted.
+//     GET /study-plans/{id}: returns 200 OK or 404 Not Found.
+//     POST /study-plans: creates the plan with a positive coefficient and returns 201 Created.
+//     PATCH /study-plans/{id}/status: accepts only "active" or "inactive"; allows bidirectional 
+//     transitions and returns 200 OK.
+//     The status response is validated as exact text, ignoring only case; numeric values ​​or other 
+//     states are not accepted.
 **/
 [ApiController]
 [Route("study-plans")]
@@ -80,6 +80,14 @@ public sealed class StudyPlansController(IMediator mediator, IMapper mapper) : C
         [FromBody] CreateStudyPlanRequest request,
         CancellationToken cancellationToken)
     {
+        if (request.Coefficient <= 0)
+        {
+            return UnprocessableEntity(this.CreateProblemDetails(
+                StatusCodes.Status422UnprocessableEntity,
+                "Invalid study plan coefficient",
+                "Coefficient must be greater than zero."));
+        }
+
         try
         {
             var dto = await _mediator.Send(

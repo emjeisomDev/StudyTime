@@ -68,7 +68,7 @@ public sealed class BootstrapSystemHandler(
 
         if (existingStudyAreaWeeks.Count > 0)
         {
-            throw new DomainException(
+            throw new DuplicateStudyAreaWeekException(
                 "The system has already been initialized.");
         }
 
